@@ -1,7 +1,7 @@
 import google.generativeai as genai
 import os
 import json
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 from typing import List
 
 # Configure Gemini AI
@@ -22,6 +22,23 @@ class Item(BaseModel):
 
 class Items(BaseModel):
     prices: List[Item] = Field(description="The list of items with the item name, unit and price.")
+
+class Line_Item(BaseModel):
+    name: str = Field(description="The name of the item, if unclear or not available, please return 'unknown'")
+    unit: str = Field(description="The unit of the item, if unclear or not available, please return 'unknown'")
+    price: float = Field(description="The price of the item, if unclear or not available, please return zero")
+    quantity: float = Field(description="The quantity of the item, if unclear or not available, please return zero")
+
+    @computed_field
+    def total(self) -> float:
+        return self.price * self.quantity
+
+class Line_Items(BaseModel):
+    lines: List[Line_Item] = Field(description="The list of line items with the item name, price, and quantity.")
+
+    @computed_field
+    def sub_total(self) -> float:
+        return sum(line.total for line in self.lines)
 
 def analyze_project(description: str) -> dict:
     prompt = f"""
@@ -56,6 +73,23 @@ def analyze_project(description: str) -> dict:
 
     response = model.generate_content(prompt)
     return json.loads(response.text)
+
+def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
+    lines = []
+    for item in project_details['items']:
+        item_name = item['type']
+        quantity = item['quantity']
+        price = price_list.get(item_name, 0)
+
+        line_item = Line_Item(
+            name=item_name,
+            unit="unit",  # We'll need to update this when we add unit tracking
+            price=price,
+            quantity=quantity
+        )
+        lines.append(line_item)
+
+    return Line_Items(lines=lines)
 
 def generate_price_list(description: str) -> Items:
     prompt = f"""

@@ -54,15 +54,35 @@
                 <h4>Timeline</h4>
                 <p>{{ project_details.timeline }}</p>
 
-                <h4>Materials</h4>
-                <ul>
-                {% for material in project_details.materials %}
-                    <li>{{ material }}</li>
-                {% endfor %}
-                </ul>
-
-                <h4>Total Estimate</h4>
-                <p class="total-cost">${{ "%.2f"|format(total_cost) }}</p>
+                <h4>Cost Breakdown</h4>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Unit</th>
+                                <th>Quantity</th>
+                                <th>Price/Unit</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in line_items.lines %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.unit }}</td>
+                                <td>{{ "%.2f"|format(item.quantity) }}</td>
+                                <td>${{ "%.2f"|format(item.price) }}</td>
+                                <td>${{ "%.2f"|format(item.total) }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="table-active">
+                                <td colspan="4" class="text-end"><strong>Total Cost:</strong></td>
+                                <td><strong>${{ "%.2f"|format(total_cost) }}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
