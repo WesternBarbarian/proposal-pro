@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="hero-section text-center">
+    <h1 class="display-4">Smart Contractor Estimates</h1>
+    <p class="lead">Generate professional proposals powered by AI</p>
+    <a href="{{ url_for('estimate') }}" class="btn btn-primary btn-lg">Start New Estimate</a>
+</div>
+
+<div class="features-section mt-5">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="feature-card">
+                <i data-feather="cpu"></i>
+                <h3>AI-Powered Analysis</h3>
+                <p>Intelligent project scope and cost analysis</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card">
+                <i data-feather="dollar-sign"></i>
+                <h3>Accurate Pricing</h3>
+                <p>Up-to-date material and labor cost calculations</p>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="feature-card">
+                <i data-feather="file-text"></i>
+                <h3>Professional Proposals</h3>
+                <p>Automatically generated detailed proposals</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+:root {
+    --primary-color: #2B59C3;
+    --secondary-color: #36B37E;
+    --background-color: #F5F7FA;
+    --text-color: #1A1F36;
+    --accent-color: #FF5630;
+}
+
+body {
+    font-family: 'Source Sans Pro', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'IBM Plex Sans', sans-serif;
+}
+
+.navbar {
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-brand {
+    color: var(--primary-color) !important;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-success {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+}
+
+.hero-section {
+    padding: 4rem 0;
+}
+
+.feature-card {
+    padding: 2rem;
+    text-align: center;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.feature-card i {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.estimate-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.total-cost {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.proposal-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+@media print {
+    .non-printable {
+        display: none;
+    }
+    
+    .proposal-container {
+        box-shadow: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 0;
+    }
+    
+    .feature-card {
+        margin-bottom: 1rem;
+    }
+}

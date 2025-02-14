@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="estimate-form">
+    <h2>Project Estimate</h2>
+    
+    {% if not project_details %}
+    <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" novalidate>
+        <div class="mb-3">
+            <label for="project_description" class="form-label">Project Description</label>
+            <textarea class="form-control" id="project_description" name="project_description" rows="5" required></textarea>
+            <div class="invalid-feedback">
+                Please provide a project description.
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Generate Estimate</button>
+    </form>
+    {% else %}
+    <div class="estimate-results">
+        <h3>Project Details</h3>
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4>Scope</h4>
+                <p>{{ project_details.scope }}</p>
+                
+                <h4>Timeline</h4>
+                <p>{{ project_details.timeline }}</p>
+                
+                <h4>Materials</h4>
+                <ul>
+                {% for material in project_details.materials %}
+                    <li>{{ material }}</li>
+                {% endfor %}
+                </ul>
+                
+                <h4>Total Estimate</h4>
+                <p class="total-cost">${{ "%.2f"|format(total_cost) }}</p>
+            </div>
+        </div>
+        
+        <form method="POST" action="{{ url_for('create_proposal') }}">
+            <input type="hidden" name="project_details" value="{{ project_details|tojson }}">
+            <input type="hidden" name="total_cost" value="{{ total_cost }}">
+            <button type="submit" class="btn btn-success">Generate Proposal</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
