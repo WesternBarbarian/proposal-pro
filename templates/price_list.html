@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Price List Management</h2>
+
+    <!-- Current Price List -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Current Price List</h4>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Unit</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item, price in current_prices.items() %}
+                    <tr>
+                        <td>{{ item }}</td>
+                        <td>{{ units.get(item, 'unit') }}</td>
+                        <td>${{ "%.2f"|format(price) }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary edit-price" 
+                                    data-item="{{ item }}" 
+                                    data-price="{{ price }}"
+                                    data-unit="{{ units.get(item, 'unit') }}">
+                                Edit
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Generate New Price List -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Generate New Price List</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('generate_price_list') }}" class="needs-validation">
+                {{ form.csrf_token }}
+                <div class="mb-3">
+                    {{ form.price_description.label(class="form-label") }}
+                    <p class="text-muted">Enter a description of items and their prices. For example: "Drywall costs $2.50 per square foot, painting is $3.00 per square foot..."</p>
+                    {{ form.price_description(class="form-control", rows=5) }}
+                    {% if form.price_description.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.price_description.errors %}
+                        {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Price Modal -->
+    <div class="modal fade" id="editPriceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Price</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="{{ url_for('update_price') }}" id="editPriceForm">
+                        <input type="hidden" name="item" id="editItemName">
+                        <div class="mb-3">
+                            <label class="form-label">Item</label>
+                            <input type="text" class="form-control" id="displayItemName" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Unit</label>
+                            <input type="text" class="form-control" name="unit" id="editItemUnit" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Price</label>
+                            <input type="number" step="0.01" class="form-control" name="price" id="editItemPrice" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for handling the edit modal -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editButtons = document.querySelectorAll('.edit-price');
+    editButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const item = this.dataset.item;
+            const price = this.dataset.price;
+            const unit = this.dataset.unit;
+            
+            document.getElementById('editItemName').value = item;
+            document.getElementById('displayItemName').value = item;
+            document.getElementById('editItemPrice').value = price;
+            document.getElementById('editItemUnit').value = unit;
+            
+            new bootstrap.Modal(document.getElementById('editPriceModal')).show();
+        });
+    });
+});
+</script>
+{% endblock %}

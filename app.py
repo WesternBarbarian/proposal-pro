@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, jsonify, flash, redirect, url
 from flask_wtf import FlaskForm
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
-from ai_helper import analyze_project, generate_proposal, Customer
+from ai_helper import analyze_project, generate_proposal, Customer, generate_price_list
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -17,10 +17,22 @@ class ProjectForm(FlaskForm):
     project_description = TextAreaField('Project Description', validators=[DataRequired()])
     submit = SubmitField('Generate Estimate')
 
+class PriceListForm(FlaskForm):
+    price_description = TextAreaField('Price Description', validators=[DataRequired()])
+    submit = SubmitField('Generate Price List')
+
 # Load price list
 def load_price_list():
-    with open('price_list.json', 'r') as f:
-        return json.load(f)
+    try:
+        with open('price_list.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
+
+# Save price list
+def save_price_list(price_list):
+    with open('price_list.json', 'w') as f:
+        json.dump(price_list, f, indent=4)
 
 @app.route('/')
 def index():
@@ -76,6 +88,64 @@ def create_proposal():
         logging.error(f"Error generating proposal: {str(e)}")
         flash('Error generating proposal. Please try again.', 'error')
         return redirect(url_for('estimate'))
+
+@app.route('/price-list', methods=['GET', 'POST'])
+def price_list():
+    form = PriceListForm()
+    current_prices = load_price_list()
+    return render_template('price_list.html', 
+                         form=form, 
+                         current_prices=current_prices,
+                         units={})
+
+@app.route('/generate-price-list', methods=['POST'])
+def generate_price_list_route():
+    form = PriceListForm()
+    if form.validate_on_submit():
+        try:
+            # Generate price list using AI
+            items = generate_price_list(form.price_description.data)
+
+            # Convert to the format we use in price_list.json
+            price_list = {item.item: item.price for item in items.prices}
+            units = {item.item: item.unit for item in items.prices}
+
+            # Save the new price list
+            save_price_list(price_list)
+
+            flash('Price list updated successfully!', 'success')
+            return redirect(url_for('price_list'))
+        except Exception as e:
+            logging.error(f"Error generating price list: {str(e)}")
+            flash('Error generating price list. Please try again.', 'error')
+
+    return redirect(url_for('price_list'))
+
+@app.route('/update-price', methods=['POST'])
+def update_price():
+    try:
+        item = request.form.get('item')
+        price = float(request.form.get('price'))
+
+        if not item or price < 0:
+            flash('Invalid price update request.', 'error')
+            return redirect(url_for('price_list'))
+
+        # Load current price list
+        price_list = load_price_list()
+
+        # Update price
+        price_list[item] = price
+
+        # Save updated price list
+        save_price_list(price_list)
+
+        flash('Price updated successfully!', 'success')
+    except Exception as e:
+        logging.error(f"Error updating price: {str(e)}")
+        flash('Error updating price. Please try again.', 'error')
+
+    return redirect(url_for('price_list'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

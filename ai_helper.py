@@ -15,6 +15,14 @@ class Customer(BaseModel):
     address: str = Field(description="The address of the customer, if not visible, please return 'unknown'")
     project_address: str = Field(description="The address of the project, if not visible, please return 'same'")
 
+class Item(BaseModel):
+    item: str = Field(description="The name of the item, if unclear are not available, please return 'unknown'")
+    unit: str = Field(description="The unit of the item, if unclear are not available, please return 'unknown'")
+    price: float = Field(description="The price of the item, if unclear or not available, please return zero")
+
+class Items(BaseModel):
+    prices: List[Item] = Field(description="The list of items with the item name, unit and price.")
+
 def analyze_project(description: str) -> dict:
     prompt = f"""
     Analyze this construction project description and extract all information:
@@ -48,6 +56,32 @@ def analyze_project(description: str) -> dict:
 
     response = model.generate_content(prompt)
     return json.loads(response.text)
+
+def generate_price_list(description: str) -> Items:
+    prompt = f"""
+    Extract pricing information from the following description and format as a structured list:
+    {description}
+
+    For each item, provide:
+    - Item name
+    - Unit of measurement
+    - Price per unit
+
+    Format as JSON with the structure:
+    {{
+        "prices": [
+            {{
+                "item": "item name",
+                "unit": "unit of measurement",
+                "price": price_value
+            }},
+            ...
+        ]
+    }}
+    """
+
+    response = model.generate_content(prompt)
+    return Items.parse_raw(response.text)
 
 def generate_proposal(project_details: dict, customer: Customer, total_cost: float) -> str:
     prompt = f"""
