@@ -46,7 +46,7 @@
             <h4>Generate New Price List</h4>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ url_for('generate_price_list') }}" class="needs-validation">
+            <form method="POST" action="{{ url_for('generate_price_list_route') }}" class="needs-validation">
                 {{ form.csrf_token }}
                 <div class="mb-3">
                     {{ form.price_description.label(class="form-label") }}
@@ -105,12 +105,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const item = this.dataset.item;
             const price = this.dataset.price;
             const unit = this.dataset.unit;
-            
+
             document.getElementById('editItemName').value = item;
             document.getElementById('displayItemName').value = item;
             document.getElementById('editItemPrice').value = price;
             document.getElementById('editItemUnit').value = unit;
-            
+
             new bootstrap.Modal(document.getElementById('editPriceModal')).show();
         });
     });
