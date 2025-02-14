@@ -3,8 +3,8 @@ import json
 import logging
 from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SubmitField
-from wtforms.validators import DataRequired, Email
+from wtforms import TextAreaField, SubmitField
+from wtforms.validators import DataRequired
 from ai_helper import analyze_project, generate_proposal, Customer
 
 # Configure logging
@@ -14,11 +14,6 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET")
 
 class ProjectForm(FlaskForm):
-    customer_name = StringField('Customer Name', validators=[DataRequired()])
-    customer_phone = StringField('Phone Number', validators=[DataRequired()])
-    customer_email = StringField('Email', validators=[DataRequired(), Email()])
-    customer_address = StringField('Customer Address', validators=[DataRequired()])
-    project_address = StringField('Project Address', validators=[DataRequired()])
     project_description = TextAreaField('Project Description', validators=[DataRequired()])
     submit = SubmitField('Generate Estimate')
 
@@ -36,18 +31,18 @@ def estimate():
     form = ProjectForm()
     if form.validate_on_submit():
         try:
-            # Create Customer object
-            customer = Customer(
-                name=form.customer_name.data,
-                phone=form.customer_phone.data,
-                email=form.customer_email.data,
-                address=form.customer_address.data,
-                project_address=form.project_address.data
-            )
-
-            # Analyze project using Gemini AI
-            project_details = analyze_project(form.project_description.data, customer)
+            # Extract customer information and project details using AI
+            project_details = analyze_project(form.project_description.data)
             price_list = load_price_list()
+
+            # Create Customer object from AI-extracted data
+            customer = Customer(
+                name=project_details.get('customer', {}).get('name', 'unknown'),
+                phone=project_details.get('customer', {}).get('phone', 'unknown'),
+                email=project_details.get('customer', {}).get('email', 'unknown'),
+                address=project_details.get('customer', {}).get('address', 'unknown'),
+                project_address=project_details.get('customer', {}).get('project_address', 'same')
+            )
 
             # Calculate estimated costs
             total_cost = 0

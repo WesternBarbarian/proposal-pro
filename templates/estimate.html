@@ -9,77 +9,13 @@
         {{ form.csrf_token }}
         <div class="card mb-4">
             <div class="card-header">
-                <h4>Customer Information</h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        {{ form.customer_name.label(class="form-label") }}
-                        {{ form.customer_name(class="form-control") }}
-                        {% if form.customer_name.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.customer_name.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        {{ form.customer_phone.label(class="form-label") }}
-                        {{ form.customer_phone(class="form-control") }}
-                        {% if form.customer_phone.errors %}
-                        <div class="invalid-feedback">
-                            {% for error in form.customer_phone.errors %}
-                            {{ error }}
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="mb-3">
-                    {{ form.customer_email.label(class="form-label") }}
-                    {{ form.customer_email(class="form-control") }}
-                    {% if form.customer_email.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.customer_email.errors %}
-                        {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="mb-3">
-                    {{ form.customer_address.label(class="form-label") }}
-                    {{ form.customer_address(class="form-control") }}
-                    {% if form.customer_address.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.customer_address.errors %}
-                        {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="mb-3">
-                    {{ form.project_address.label(class="form-label") }}
-                    {{ form.project_address(class="form-control") }}
-                    {% if form.project_address.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.project_address.errors %}
-                        {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <div class="card mb-4">
-            <div class="card-header">
                 <h4>Project Details</h4>
             </div>
             <div class="card-body">
                 <div class="mb-3">
                     {{ form.project_description.label(class="form-label") }}
-                    {{ form.project_description(class="form-control", rows=5) }}
+                    <p class="text-muted">Please include customer information (name, contact details, address) and project requirements in your description.</p>
+                    {{ form.project_description(class="form-control", rows=8) }}
                     {% if form.project_description.errors %}
                     <div class="invalid-feedback">
                         {% for error in form.project_description.errors %}

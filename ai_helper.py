@@ -15,25 +15,35 @@ class Customer(BaseModel):
     address: str = Field(description="The address of the customer, if not visible, please return 'unknown'")
     project_address: str = Field(description="The address of the project, if not visible, please return 'same'")
 
-class Request(BaseModel):
-    item: str = Field(description="The name of the item, if unclear or not available")
-    quantity: int = Field(description="The quantity of items needed, if unclear or not available, please return zero")
-
-class Requests(BaseModel):
-    notes: str = Field(description="Any notes about the project, if any")
-    details: List[Request] = Field(description="The list of items with the item name and quantity.")
-
-def analyze_project(description: str, customer: Customer) -> dict:
+def analyze_project(description: str) -> dict:
     prompt = f"""
-    Analyze this construction project with customer details:
-    Customer: {customer.dict()}
-    Project Description: {description}
+    Analyze this construction project description and extract all information:
+    {description}
 
-    Extract the required information and return as JSON with:
+    Extract and return a JSON object with:
+    - Customer information (name, phone, email, address, project_address)
     - Project scope
     - Required materials with quantities
     - Estimated timeline
     - Work items with quantities
+
+    Format the response as:
+    {{
+        "customer": {{
+            "name": "...",
+            "phone": "...",
+            "email": "...",
+            "address": "...",
+            "project_address": "..."
+        }},
+        "scope": "...",
+        "materials": [...],
+        "timeline": "...",
+        "items": [
+            {{"type": "item_name", "quantity": number}},
+            ...
+        ]
+    }}
     """
 
     response = model.generate_content(prompt)
