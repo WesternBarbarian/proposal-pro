@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for
+from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, make_response
 from flask_wtf import FlaskForm
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
@@ -61,10 +61,10 @@ def estimate():
             total_cost = line_items.sub_total
 
             return render_template('estimate.html',
-                                project_details=project_details,
-                                total_cost=total_cost,
-                                customer=customer,
-                                line_items=line_items)
+                                    project_details=project_details,
+                                    total_cost=total_cost,
+                                    customer=customer,
+                                    line_items=line_items)
         except Exception as e:
             logging.error(f"Error processing estimate: {str(e)}")
             flash('Error processing your request. Please try again.', 'error')
@@ -75,17 +75,37 @@ def estimate():
 @app.route('/generate_proposal', methods=['POST'])
 def create_proposal():
     try:
-        project_details = request.form.get('project_details')
-        total_cost = float(request.form.get('total_cost'))
+        project_details = json.loads(request.form.get('project_details'))
+        line_items_data = json.loads(request.form.get('line_items'))
         customer_data = json.loads(request.form.get('customer'))
 
-        customer = Customer(**customer_data)
-        proposal = generate_proposal(project_details, customer, total_cost)
+        # Recreate Line_Items object
+        line_items = Line_Items(lines=[
+            Line_Item(**item) for item in line_items_data['lines']
+        ])
 
-        return render_template('proposal.html', proposal=proposal)
+        customer = Customer(**customer_data)
+        proposal = generate_proposal(project_details, customer, line_items)
+
+        return render_template('proposal.html', 
+                            proposal=proposal,
+                            raw_proposal=proposal)  # For markdown editing
     except Exception as e:
         logging.error(f"Error generating proposal: {str(e)}")
         flash('Error generating proposal. Please try again.', 'error')
+        return redirect(url_for('estimate'))
+
+@app.route('/save_proposal', methods=['POST'])
+def save_proposal():
+    try:
+        edited_proposal = request.form.get('edited_proposal')
+        response = make_response(edited_proposal)
+        response.headers['Content-Type'] = 'text/markdown'
+        response.headers['Content-Disposition'] = 'attachment; filename=proposal.md'
+        return response
+    except Exception as e:
+        logging.error(f"Error saving proposal: {str(e)}")
+        flash('Error saving proposal. Please try again.', 'error')
         return redirect(url_for('estimate'))
 
 @app.route('/price-list', methods=['GET', 'POST'])

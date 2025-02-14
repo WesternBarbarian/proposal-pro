@@ -117,9 +117,13 @@ def generate_price_list(description: str) -> Items:
     response = model.generate_content(prompt)
     return Items.parse_raw(response.text)
 
-def generate_proposal(project_details: dict, customer: Customer, total_cost: float) -> str:
+def generate_proposal(project_details: dict, customer: Customer, line_items: Line_Items) -> str:
     prompt = f"""
-    Generate a professional construction proposal based on:
+    You are an estimator writing a new proposal for a client. Please proceed 
+    step-by-step:
+
+    1. Please write the project briefing based on these notes: 
+    Project Details: {project_details}
     Customer Information:
     - Name: {customer.name}
     - Phone: {customer.phone}
@@ -127,15 +131,20 @@ def generate_proposal(project_details: dict, customer: Customer, total_cost: flo
     - Address: {customer.address}
     - Project Address: {customer.project_address}
 
-    Project Details: {project_details}
-    Total Cost: ${total_cost:,.2f}
+    Line Items:
+    {[{"item": item.name, "quantity": item.quantity, "price": item.price, "total": item.total} for item in line_items.lines]}
 
-    Include:
-    - Executive summary
-    - Scope of work
+    2. Based on the above write a one-paragraph estimate that 
+    explains the cost estimate for this project (${line_items.sub_total:.2f}), as well as the 
+    anticipated timeline. Base it on the project briefing you
+    just wrote, the project details and the Line Items.
+
+    Format the response in Markdown with clear sections, including:
+    - Project Overview
+    - Scope of Work
+    - Cost Breakdown
     - Timeline
-    - Cost breakdown
-    - Terms and conditions
+    - Terms and Conditions
     """
 
     response = model.generate_content(prompt)

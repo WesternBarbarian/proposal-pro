@@ -4,17 +4,69 @@
 <div class="proposal-container">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Project Proposal</h2>
-        <button class="btn btn-primary" onclick="window.print()">
-            <i data-feather="printer"></i> Print
-        </button>
+        <div>
+            <button class="btn btn-secondary me-2" id="toggleEdit">
+                <i data-feather="edit"></i> Edit
+            </button>
+            <form method="POST" action="{{ url_for('save_proposal') }}" class="d-inline" id="downloadForm">
+                <input type="hidden" name="edited_proposal" id="proposalContent">
+                <button type="submit" class="btn btn-primary">
+                    <i data-feather="download"></i> Download as Markdown
+                </button>
+            </form>
+        </div>
     </div>
-    
-    <div class="proposal-content">
-        {{ proposal|safe }}
+
+    <div class="proposal-content" id="viewMode">
+        {{ proposal|markdown }}
     </div>
-    
-    <div class="mt-4 non-printable">
-        <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Back to Estimate</a>
+
+    <div class="proposal-editor d-none" id="editMode">
+        <textarea class="form-control" rows="20" id="proposalEditor">{{ raw_proposal }}</textarea>
     </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const viewMode = document.getElementById('viewMode');
+    const editMode = document.getElementById('editMode');
+    const toggleEdit = document.getElementById('toggleEdit');
+    const proposalEditor = document.getElementById('proposalEditor');
+    const proposalContent = document.getElementById('proposalContent');
+    const downloadForm = document.getElementById('downloadForm');
+
+    // Toggle between view and edit modes
+    toggleEdit.addEventListener('click', function() {
+        const isEditing = viewMode.classList.contains('d-none');
+        if (isEditing) {
+            // Switch to view mode
+            viewMode.innerHTML = marked.parse(proposalEditor.value);
+            viewMode.classList.remove('d-none');
+            editMode.classList.add('d-none');
+            this.innerHTML = '<i data-feather="edit"></i> Edit';
+        } else {
+            // Switch to edit mode
+            editMode.classList.remove('d-none');
+            viewMode.classList.add('d-none');
+            this.innerHTML = '<i data-feather="eye"></i> Preview';
+        }
+        feather.replace();
+    });
+
+    // Update hidden input before form submission
+    downloadForm.addEventListener('submit', function() {
+        proposalContent.value = proposalEditor.value;
+    });
+});
+</script>
+
+<style>
+.proposal-editor {
+    margin-top: 1rem;
+}
+.proposal-editor textarea {
+    font-family: monospace;
+}
+</style>
 {% endblock %}
