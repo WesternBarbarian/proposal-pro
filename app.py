@@ -13,11 +13,12 @@ logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-app.logger.setLevel(logging.DEBUG)
+
 
 
 app = Flask(__name__)
 
+app.logger.setLevel(logging.DEBUG)
 # Configure session to use filesystem (Replit resets in-memory sessions)
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
