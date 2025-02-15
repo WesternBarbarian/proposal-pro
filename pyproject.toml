@@ -16,4 +16,5 @@ dependencies = [
     "pydantic>=2.10.6",
     "wtforms>=3.2.1",
     "sift-stack-py>=0.3.3",
+    "flask-session>=0.8.0",
 ]

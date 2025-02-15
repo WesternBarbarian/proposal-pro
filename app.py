@@ -1,7 +1,8 @@
 import os
 import json
 import logging
-from flask import Flask, render_template, request, flash, redirect, url_for, make_response
+from flask import Flask, render_template, request, flash, redirect, url_for, make_response, session
+from flask_session import Session
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
@@ -10,10 +11,22 @@ from ai_helper import analyze_project, generate_proposal, Customer, generate_pri
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
+
 app = Flask(__name__)
-app.secret_key = os.environ["SESSION_SECRET"]
-csrf = CSRFProtect()
-csrf.init_app(app)
+
+# Configure session to use filesystem (Replit resets in-memory sessions)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'flask_'
+app.config['SECRET_KEY'] = os.environ.get("SESSION_SECRET", "fallback_secret")
+
+# Initialize Session
+Session(app)
+
+
+#csrf = CSRFProtect()
+#csrf.init_app(app)
 
 class ProjectForm(FlaskForm):
     project_description = TextAreaField('Project Description', validators=[DataRequired()])
@@ -126,21 +139,18 @@ def generate_price_list_route():
     form = PriceListForm()
     if form.validate_on_submit():
         try:
-            
-            # Generate price list using AI
             items = generate_price_list(form.price_description.data)
-            app.logger.info(f"Logging: {items}") 
+            app.logger.info(f"Generated Items: {items}")  
 
-            
-
-            # Save the new price list
-            save_price_list(price_list)
+            save_price_list(items)
 
             flash('Price list updated successfully!', 'success')
             return redirect(url_for('price_list'))
         except Exception as e:
             logging.error(f"Error generating price list: {str(e)}")
             flash('Error generating price list. Please try again.', 'error')
+    else:
+        flash('Invalid CSRF token or form submission.', 'error')
 
     return redirect(url_for('price_list'))
 
