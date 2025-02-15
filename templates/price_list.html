@@ -20,16 +20,16 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item, price in current_prices.items() %}
+                    {% for item, details in current_prices.items() %}
                     <tr>
                         <td>{{ item }}</td>
-                        <td>{{ units.get(item, 'unit') }}</td>
-                        <td>${{ "%.2f"|format(price) }}</td>
+                        <td>{{ details.unit }}</td>
+                        <td>${{ "%.2f"|format(details.price) }}</td>
                         <td>
                             <button class="btn btn-sm btn-primary edit-price" 
                                     data-item="{{ item }}" 
-                                    data-price="{{ price }}"
-                                    data-unit="{{ units.get(item, 'unit') }}">
+                                    data-price="{{ details.price }}"
+                                    data-unit="{{ details.unit }}">
                                 Edit
                             </button>
                         </td>

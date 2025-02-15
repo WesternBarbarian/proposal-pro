@@ -140,12 +140,10 @@ def save_proposal():
 @app.route('/price-list', methods=['GET', 'POST'])
 def price_list():
     form = PriceListForm()
-    #current_prices={}
     current_prices = load_price_list()
     return render_template('price_list.html', 
                           form=form, 
-                          current_prices=current_prices,
-                          units={})
+                          current_prices=current_prices)
     
 
 
@@ -185,16 +183,20 @@ def update_price():
     try:
         item = request.form.get('item')
         price = float(request.form.get('price'))
+        unit = request.form.get('unit')
 
-        if not item or price < 0:
+        if not item or price < 0 or not unit:
             flash('Invalid price update request.', 'error')
             return redirect(url_for('price_list'))
 
         # Load current price list
         price_list = load_price_list()
 
-        # Update price
-        price_list[item] = price
+        # Update price and unit
+        price_list[item] = {
+            "unit": unit,
+            "price": price
+        }
 
         # Save updated price list
         save_price_list(price_list)
