@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from flask import Flask, render_template, request, jsonify, flash, redirect, url_for, make_response
+from flask import Flask, render_template, request, flash, redirect, url_for, make_response
 from flask_wtf import FlaskForm
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
@@ -11,7 +11,7 @@ from ai_helper import analyze_project, generate_proposal, Customer, generate_pri
 logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET")
+app.secret_key = os.environ["SESSION_SECRET"]
 
 class ProjectForm(FlaskForm):
     project_description = TextAreaField('Project Description', validators=[DataRequired()])
@@ -36,7 +36,9 @@ def save_price_list(price_list):
 
 @app.route('/')
 def index():
+    app.logger.info("Home route was accessed")  # Log an INFO message
     return render_template('index.html')
+    
 
 @app.route('/estimate', methods=['GET', 'POST'])
 def estimate():
@@ -122,12 +124,12 @@ def generate_price_list_route():
     form = PriceListForm()
     if form.validate_on_submit():
         try:
+            
             # Generate price list using AI
             items = generate_price_list(form.price_description.data)
+            app.logger.info(f"Logging: {items}") 
 
-            # Convert to the format we use in price_list.json
-            price_list = {item.item: item.price for item in items.prices}
-            units = {item.item: item.unit for item in items.prices}
+            
 
             # Save the new price list
             save_price_list(price_list)
@@ -166,5 +168,5 @@ def update_price():
 
     return redirect(url_for('price_list'))
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+#if __name__ == '__main__':
+ #   app.run(host='0.0.0.0', port=5000, debug=True)

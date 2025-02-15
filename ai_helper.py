@@ -1,151 +1,249 @@
-import google.generativeai as genai
+from google import genai
+
 import os
 import json
 from pydantic import BaseModel, Field, computed_field
 from typing import List
 
 # Configure Gemini AI
-genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-model = genai.GenerativeModel('gemini-pro')
+api_key= os.environ['GEMINI_API_KEY']
+client = genai.Client(api_key=api_key)
+model = "gemini-2.0-flash"
 
 class Customer(BaseModel):
-    name: str = Field(description="The name of the customer, if not visible, please return 'unknown'")
-    phone: str = Field(description="The phone number of the customer, if not visible, please return 'unknown'")
-    email: str = Field(description="The email address of the customer, if not visible, please return 'unknown'")
-    address: str = Field(description="The address of the customer, if not visible, please return 'unknown'")
-    project_address: str = Field(description="The address of the project, if not visible, please return 'same'")
+  name: str = Field(description="The name of the customer, if not visible, please return 'unknown'")
+  phone: str = Field(description="The phone number of the customer, if not visible, please return 'unknown")
+  email: str = Field(description="The email address of the customer, if not visible, please return 'unknown")
+  address: str = Field(description="The address of the customer, if not visible, please return 'unknown")
+  project_address: str = Field(description="The address of the project, if not visible, please return 'same")
+
+class Request(BaseModel):
+  item: str = Field(description="The name of the item, if unclear or not available")
+  quantity: int = Field(description="The quantity of items needed, if unclear or not available, please return zero")
+
+class Requests(BaseModel):
+  notes: str = Field(description="Any notes about the project, if any")
+  details: list[Request] = Field(description="The list of items with the item name and quantity.")
+
 
 class Item(BaseModel):
     item: str = Field(description="The name of the item, if unclear are not available, please return 'unknown'")
     unit: str = Field(description="The unit of the item, if unclear are not available, please return 'unknown'")
-    price: float = Field(description="The price of the item, if unclear or not available, please return zero")
+    price: int = Field(description="The price of the item, if unclear or not available, please return zero")
+
 
 class Items(BaseModel):
-    prices: List[Item] = Field(description="The list of items with the item name, unit and price.")
+  prices: list[Item] = Field(description="The list of items with the item name, unit and price.")
+
 
 class Line_Item(BaseModel):
-    name: str = Field(description="The name of the item, if unclear or not available, please return 'unknown'")
-    unit: str = Field(description="The unit of the item, if unclear or not available, please return 'unknown'")
-    price: float = Field(description="The price of the item, if unclear or not available, please return zero")
-    quantity: float = Field(description="The quantity of the item, if unclear or not available, please return zero")
+  name: str = Field(description="The name of the item, if unclear or not available, please return 'unknown'")
+  unit: str = Field(description="The unit of the item, if unclear or not available, please return 'unknown'")
+  price: int = Field(description="The price of the item, if unclear or not available, please return zero")
+  quantity: int = Field(description="The quantity of the item, if unclear or not available, please return zero")
 
-    @computed_field
-    def total(self) -> float:
-        return self.price * self.quantity
+  @computed_field
+  def total(self) -> int:
+    return self.price * self.quantity
 
 class Line_Items(BaseModel):
-    lines: List[Line_Item] = Field(description="The list of line items with the item name, price, and quantity.")
+  lines: list[Line_Item] = Field(description="The list of line items with the item name, price, and quantity.")
 
-    @computed_field
-    def sub_total(self) -> float:
-        return sum(line.total for line in self.lines)
+  @computed_field
+  def sub_total(self) -> int:
+      """Calculates the sum of all line item totals."""
+      return sum(line.total for line in self.lines)
+
+
+
 
 def analyze_project(description: str) -> dict:
-    prompt = f"""
-    Analyze this construction project description and extract all information:
-    {description}
+    prompt = f"Extract the structured data from {description}"
 
-    Extract and return a JSON object with:
-    - Customer information (name, phone, email, address, project_address)
-    - Project scope
-    - Required materials with quantities
-    - Estimated timeline
-    - Work items with quantities
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config={'response_mime_type': 'application/json', 'response_schema': Requests})
 
-    Format the response as:
-    {{
-        "customer": {{
-            "name": "...",
-            "phone": "...",
-            "email": "...",
-            "address": "...",
-            "project_address": "..."
-        }},
-        "scope": "...",
-        "materials": [...],
-        "timeline": "...",
-        "items": [
-            {{"type": "item_name", "quantity": number}},
-            ...
-        ]
-    }}
-    """
+    user_request: Requests = response.parsed
 
-    response = model.generate_content(prompt)
-    return json.loads(response.text)
+    #Read the 'notes' field into a variable
+    project_notes = user_request.notes
+
+
+    return user_request, project_notes
+   
+    
 
 def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
-    lines = []
-    for item in project_details['items']:
-        item_name = item['type']
-        quantity = item['quantity']
-        price = price_list.get(item_name, 0)
+    sys_instruct="""##Role: You are a pricing specialist.
+    You look up the price of items from the provided list.
+    ##Task: Look up prices.
+    ##Task Guidance: Items may have alternative names. When you know what the user means, look up the price for that item.
+    If you do not know what an item is, or if it is not in the list, enter the price as zero in your response.
+    If you are provided with a quantity, return the quantity for the item in the json response.
+    If you are not provided with a quantity put zero. DO NOT GUESS ABOUT QUANTITY.
+    Carefully review the users input and make sure you know the quantity for each item.
+    ### Example 1:
+    {
+      "role": "user",
+      "parts": [
+        "I need 3 drills, work lights, and 1 ladder."
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        json
+        [
+          {
+            "item": "Cordless Drill",
+            "quantity": "3",
+            "price": "79.99"
+          },
+          {
+            "item": "LED Work Light",
+            "quantity": "unknown",
+            "price": "39.99"
+          },
+          {
+            "item": "Ladder (6ft)",
+            "quantity": "1",
+            "price": "89.99"
+          }
+        ]
+      ]
+    }
 
-        line_item = Line_Item(
-            name=item_name,
-            unit="unit",  # We'll need to update this when we add unit tracking
-            price=price,
-            quantity=quantity
-        )
-        lines.append(line_item)
+    ### Example 2:
+    {
+      "role": "user",
+      "parts": [
+        "two leaf blowers, drills, and ladders."
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        json
+        [
+          {
+            "item": "Leaf Blower",
+            "quantity": "2",
+            "price": "unknown"
+          },
+          {
+            "item": "Cordless Drill",
+            "quantity": "unknown",
+            "price": "79.99"
+          },
+          {
+            "item": "Ladder (6ft)",
+            "quantity": "unknown",
+            "price": "89.99"
+          }
+        ]
+      ]
+    }
 
-    return Line_Items(lines=lines)
+    ### Example 3:
+    {
+      "role": "user",
+      "parts": [
+        "1 stud finder, 3 ceiling fans, a ladder, a circular saw, and work lights."
+      ]
+    },
+    {
+      "role": "model",
+      "parts": [
+        json
+        [
+          {
+            "item": "Stud Finder",
+            "quantity": "1",
+            "price": "34.99"
+          },
+          {
+            "item": "Ceiling Fan",
+            "quantity": "3",
+            "price": "149.99"
+          },
+          {
+            "item": "Ladder (6ft)",
+            "quantity": "1",
+            "price": "89.99"
+          },
+          {
+            "item": "Circular Saw",
+            "quantity": "1",
+            "price": "129.99"
+          },
+          {
+            "item": "LED Work Light",
+            "quantity": "unknown",
+            "price": "39.99"
+          }
+        ]
+      ]
+    }
+    """
+    price_list = price_list
+
+
+    user_request= user_request
+
+    prompt = f"Look up the prices from the {price_list} for the items in {user_request}"
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config = types.GenerateContentConfig(
+            system_instruction=sys_instruct,
+            response_mime_type='application/json',
+            response_schema=Line_Items,
+        ),
+    )
+
+    
+    Line_Items: Line_Items = response.parsed
+   
+
+    return Line_Items
+
+
+
+
 
 def generate_price_list(description: str) -> Items:
-    prompt = f"""
-    Extract pricing information from the following description and format as a structured list:
-    {description}
+    prompt = f"Extract the structured data from the following: {description}"
 
-    For each item, provide:
-    - Item name
-    - Unit of measurement
-    - Price per unit
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config={'response_mime_type': 'application/json', 'response_schema': Items})
 
-    Format as JSON with the structure:
-    {{
-        "prices": [
-            {{
-                "item": "item name",
-                "unit": "unit of measurement",
-                "price": price_value
-            }},
-            ...
-        ]
-    }}
-    """
+    price_list: Items = response.parsed
+    
 
     response = model.generate_content(prompt)
-    return Items.parse_raw(response.text)
+    return price_list
 
 def generate_proposal(project_details: dict, customer: Customer, line_items: Line_Items) -> str:
-    prompt = f"""
-    You are an estimator writing a new proposal for a client. Please proceed 
+    prompt = f""""
+    You are an estimator writing a new proposal for a client. Please proceed
     step-by-step:
 
-    1. Please write the project briefing based on these notes: 
-    Project Details: {project_details}
-    Customer Information:
-    - Name: {customer.name}
-    - Phone: {customer.phone}
-    - Email: {customer.email}
-    - Address: {customer.address}
-    - Project Address: {customer.project_address}
-
-    Line Items:
-    {[{"item": item.name, "quantity": item.quantity, "price": item.price, "total": item.total} for item in line_items.lines]}
-
-    2. Based on the above write a one-paragraph estimate that 
-    explains the cost estimate for this project (${line_items.sub_total:.2f}), as well as the 
+    1. Please write the project briefing based on these notes:
+    {project_details} and this estimate: {line_items}. It is OK if
+    some amounts are zero.
+    2. Based on the above write a one-paragraph estimate to {customer} that
+    explains the cost estimate for this project, as well as the
     anticipated timeline. Base it on the project briefing you
-    just wrote, the project details and the Line Items.
-
-    Format the response in Markdown with clear sections, including:
-    - Project Overview
-    - Scope of Work
-    - Cost Breakdown
-    - Timeline
-    - Terms and Conditions
+    just wrote, the project_notes and the Line_Items.
     """
 
-    response = model.generate_content(prompt)
+
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+    )
     return response.text

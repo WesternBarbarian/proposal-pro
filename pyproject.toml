@@ -15,4 +15,5 @@ dependencies = [
     "openai>=1.63.0",
     "pydantic>=2.10.6",
     "wtforms>=3.2.1",
+    "sift-stack-py>=0.3.3",
 ]
