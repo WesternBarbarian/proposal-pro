@@ -137,14 +137,14 @@ def save_proposal():
         flash('Error saving proposal. Please try again.', 'error')
         return redirect(url_for('estimate'))
 
-@app.route('/price-list', methods=['GET', 'POST'])
-def price_list():
-    form = PriceListForm()
-    current_prices = load_price_list()
-    return render_template('price_list.html', 
-                         form=form, 
-                         current_prices=current_prices,
-                         units={})
+#@app.route('/price-list', methods=['GET', 'POST'])
+#def price_list():
+#    form = PriceListForm()
+    # current_prices = load_price_list()
+    # return render_template('price_list.html', 
+    #                      form=form, 
+    #                      current_prices=current_prices,
+    #                      units={})
 
 @app.route('/generate-price-list', methods=['POST'])
 def generate_price_list_route():
