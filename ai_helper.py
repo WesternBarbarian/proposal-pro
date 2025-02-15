@@ -224,7 +224,6 @@ def generate_price_list(description: str) -> Items:
     price_list: Items = response.parsed
     
 
-    response = model.generate_content(prompt)
     return price_list
 
 def generate_proposal(project_details: dict, customer: Customer, line_items: Line_Items) -> str:
