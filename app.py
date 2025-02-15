@@ -47,13 +47,19 @@ def load_price_list():
     try:
         with open('price_list.json', 'r') as f:
             return json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
 # Save price list
 def save_price_list(price_list):
+    if hasattr(price_list, 'prices'):
+        # Convert Items object to dictionary
+        price_dict = {item.item: {"unit": item.unit, "price": item.price} for item in price_list.prices}
+    else:
+        price_dict = price_list
+        
     with open('price_list.json', 'w') as f:
-        json.dump(price_list, f, indent=4)
+        json.dump(price_dict, f, indent=4)
 
 @app.route('/')
 def index():
