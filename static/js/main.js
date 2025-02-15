@@ -15,13 +15,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add loading state to form submissions
-    const submitButtons = document.querySelectorAll('form button[type="submit"]');
-    submitButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            if (this.form.checkValidity()) {
-                this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
-                this.disabled = true;
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(event) {
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (form.checkValidity()) {
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+                submitButton.disabled = true;
+                return true;
             }
+            event.preventDefault();
+            return false;
         });
     });
 });
