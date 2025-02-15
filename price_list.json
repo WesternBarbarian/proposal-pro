@@ -1,6 +1,14 @@
 {
-    "unknown": {
-        "unit": "unknown",
+    "Drywall": {
+        "unit": "square foot",
+        "price": 2
+    },
+    "Posts": {
+        "unit": "post",
         "price": 20
+    },
+    "Labor": {
+        "unit": "hour",
+        "price": 45
     }
 }
