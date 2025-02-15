@@ -9,7 +9,11 @@ from wtforms.validators import DataRequired
 from ai_helper import analyze_project, generate_proposal, Customer, generate_price_list, lookup_prices
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+app.logger.setLevel(logging.DEBUG)
 
 
 app = Flask(__name__)
@@ -136,20 +140,31 @@ def price_list():
 
 @app.route('/generate-price-list', methods=['POST'])
 def generate_price_list_route():
+    app.logger.debug(f"Form Data: {request.form}")
+    app.logger.debug(f"Headers: {dict(request.headers)}")
+    app.logger.debug(f"CSRF Token from form: {request.form.get('csrf_token')}")
+    app.logger.debug(f"CSRF Token from session: {session.get('csrf_token')}")
+    
     form = PriceListForm()
+    app.logger.debug(f"Form errors: {form.errors}")
+    app.logger.debug(f"Form validated: {form.validate()}")
+    
     if form.validate_on_submit():
         try:
+            app.logger.info("Form validation successful")
             items = generate_price_list(form.price_description.data)
             app.logger.info(f"Generated Items: {items}")  
 
             save_price_list(items)
+            app.logger.info("Price list saved successfully")
 
             flash('Price list updated successfully!', 'success')
             return redirect(url_for('price_list'))
         except Exception as e:
-            logging.error(f"Error generating price list: {str(e)}")
+            app.logger.error(f"Error generating price list: {str(e)}", exc_info=True)
             flash('Error generating price list. Please try again.', 'error')
     else:
+        app.logger.error(f"Form validation failed. Errors: {form.errors}")
         flash('Invalid CSRF token or form submission.', 'error')
 
     return redirect(url_for('price_list'))
