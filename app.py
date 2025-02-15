@@ -116,10 +116,13 @@ def save_proposal():
 def price_list():
     form = PriceListForm()
     current_prices = load_price_list()
+    # Get a new CSRF token
+    csrf_token = app.jinja_env.globals['csrf_token']()
     return render_template('price_list.html', 
                          form=form, 
                          current_prices=current_prices,
-                         units={})
+                         units={},
+                         csrf_token=csrf_token)
 
 @app.route('/generate-price-list', methods=['POST'])
 def generate_price_list_route():
