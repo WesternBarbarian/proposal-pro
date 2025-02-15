@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from flask import Flask, render_template, request, flash, redirect, url_for, make_response
-from flask_wtf import FlaskForm
+from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
 from ai_helper import analyze_project, generate_proposal, Customer, generate_price_list, lookup_prices
@@ -13,6 +13,7 @@ logging.basicConfig(level=logging.DEBUG)
 app = Flask(__name__)
 app.secret_key = os.environ["SESSION_SECRET"]
 app.config['WTF_CSRF_SECRET_KEY'] = os.environ["SESSION_SECRET"]
+csrf = CSRFProtect(app)
 
 class ProjectForm(FlaskForm):
     project_description = TextAreaField('Project Description', validators=[DataRequired()])
