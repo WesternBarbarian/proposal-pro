@@ -25,8 +25,8 @@ app.config['SECRET_KEY'] = os.environ.get("SESSION_SECRET", "fallback_secret")
 Session(app)
 
 
-#csrf = CSRFProtect()
-#csrf.init_app(app)
+csrf = CSRFProtect()
+csrf.init_app(app)
 
 class ProjectForm(FlaskForm):
     project_description = TextAreaField('Project Description', validators=[DataRequired()])

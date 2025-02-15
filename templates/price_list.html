@@ -47,6 +47,7 @@
         </div>
         <div class="card-body">
                     <form method="POST" action="{{ url_for('generate_price_list_route') }}">
+                        {{ form.csrf_token }}
                         
                         <div class="mb-3">
                     {{ form.price_description.label(class="form-label") }}
