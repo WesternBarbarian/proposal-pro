@@ -76,6 +76,7 @@
                 </div>
                 <div class="modal-body">
                     <form method="POST" action="{{ url_for('update_price') }}" id="editPriceForm">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="item" id="editItemName">
                         <div class="mb-3">
                             <label class="form-label">Item</label>
