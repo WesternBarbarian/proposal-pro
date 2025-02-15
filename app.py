@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 app.secret_key = os.environ["SESSION_SECRET"]
-app.config['WTF_CSRF_SECRET_KEY'] = os.environ["SESSION_SECRET"]
+app.config['WTF_CSRF_ENABLED'] = True
 csrf = CSRFProtect(app)
 
 class ProjectForm(FlaskForm):
