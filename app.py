@@ -12,8 +12,8 @@ logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 app.secret_key = os.environ["SESSION_SECRET"]
-app.config['WTF_CSRF_ENABLED'] = True
-csrf = CSRFProtect(app)
+csrf = CSRFProtect()
+csrf.init_app(app)
 
 class ProjectForm(FlaskForm):
     project_description = TextAreaField('Project Description', validators=[DataRequired()])
