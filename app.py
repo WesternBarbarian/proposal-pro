@@ -212,6 +212,41 @@ def delete_price():
 
     return redirect(url_for('price_list'))
 
+@app.route('/add-price', methods=['POST'])
+def add_price():
+    try:
+        item = request.form.get('item')
+        price = float(request.form.get('price'))
+        unit = request.form.get('unit')
+
+        if not item or price < 0 or not unit:
+            flash('Invalid price addition request.', 'error')
+            return redirect(url_for('price_list'))
+
+        # Load current price list
+        price_list = load_price_list()
+
+        # Check if item already exists
+        if item in price_list:
+            flash('Item already exists.', 'error')
+            return redirect(url_for('price_list'))
+
+        # Add new item
+        price_list[item] = {
+            "unit": unit,
+            "price": price
+        }
+
+        # Save updated price list
+        save_price_list(price_list)
+
+        flash('Item added successfully!', 'success')
+    except Exception as e:
+        logging.error(f"Error adding price: {str(e)}")
+        flash('Error adding price. Please try again.', 'error')
+
+    return redirect(url_for('price_list'))
+
 @app.route('/update-price', methods=['POST'])
 def update_price():
     try:
