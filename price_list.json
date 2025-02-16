@@ -6,5 +6,9 @@
     "group training": {
         "unit": "per",
         "price": 300
+    },
+    "Bootcamp": {
+        "unit": "series",
+        "price": 1500.0
     }
 }
