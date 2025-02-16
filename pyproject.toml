@@ -19,4 +19,5 @@ dependencies = [
     "flask-session>=0.8.0",
     "flask-markdown>=0.3",
     "markupsafe>=3.0.2",
+    "flask-markdown2>=0.0.3",
 ]

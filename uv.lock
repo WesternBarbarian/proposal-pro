@@ -204,6 +204,16 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/08/b0/8149a3c43418220386c0968713282fc0a3a4ef9fef991f7af2173b52505a/Flask-Markdown-0.3.tar.gz", hash = "sha256:d8c3f02545b395ad525b86760ad721a2c50efa3b8e602a8d486a1f47f68c6250", size = 165733 }
 
 [[package]]
+name = "flask-markdown2"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "flask" },
+    { name = "jinja2-markdown" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/20/7c/ea24e981a67d38e9432567ff6705e770b2b46729302e10a67c0a1003a663/flask_markdown2-0.0.3.tar.gz", hash = "sha256:986f65ef253db604eb3ce5a9421429f080e3d3c44826ea66ca19f4b0352eb7e2", size = 1637 }
+
+[[package]]
 name = "flask-session"
 version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -535,6 +545,16 @@ sdist = { url = "https://files.pythonhosted.org/packages/af/92/b3130cbbf5591acf9
 wheels = [
     { url = "https://files.pythonhosted.org/packages/bd/0f/2ba5fbcd631e3e88689309dbe978c5769e883e4b84ebfe7da30b43275c5a/jinja2-3.1.5-py3-none-any.whl", hash = "sha256:aba0f4dc9ed8013c424088f68a5c226f7d6097ed89b246d7749c2ec4175c6adb", size = 134596 },
 ]
+
+[[package]]
+name = "jinja2-markdown"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "jinja2" },
+    { name = "markdown" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/55/93/d8654282bdee3a938116644e718ade94a6c870ed599118b091e8007c4436/jinja2_markdown-0.0.3.tar.gz", hash = "sha256:1a06290f839ac6f0bfea2e3264b9ed8eb7e99ae50142e958577f63d48d33defa", size = 2139 }
 
 [[package]]
 name = "jiter"
@@ -1030,6 +1050,7 @@ dependencies = [
     { name = "flask" },
     { name = "flask-login" },
     { name = "flask-markdown" },
+    { name = "flask-markdown2" },
     { name = "flask-session" },
     { name = "flask-sqlalchemy" },
     { name = "flask-wtf" },
@@ -1049,6 +1070,7 @@ requires-dist = [
     { name = "flask", specifier = ">=3.1.0" },
     { name = "flask-login", specifier = ">=0.6.3" },
     { name = "flask-markdown", specifier = ">=0.3" },
+    { name = "flask-markdown2", specifier = ">=0.0.3" },
     { name = "flask-session", specifier = ">=0.8.0" },
     { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
     { name = "flask-wtf", specifier = ">=1.2.2" },
