@@ -92,8 +92,13 @@ def estimate():
                                     customer=customer.dict(),
                                     line_items=line_items_dict)
         except Exception as e:
-            logging.error(f"Error processing estimate: {str(e)}")
-            flash('Error processing your request. Please try again.', 'error')
+            error_msg = str(e)
+            logging.error(f"Error processing estimate: {error_msg}")
+            
+            if "429 RESOURCE_EXHAUSTED" in error_msg:
+                flash('The AI service is currently at capacity. Please wait a few minutes and try again.', 'error')
+            else:
+                flash('Error processing your request. Please try again.', 'error')
             return redirect(url_for('estimate'))
 
     return render_template('estimate.html', form=form)
