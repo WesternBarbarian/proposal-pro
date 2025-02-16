@@ -188,6 +188,30 @@ def generate_price_list_route():
 
     return redirect(url_for('price_list'))
 
+@app.route('/delete-price', methods=['POST'])
+def delete_price():
+    try:
+        item = request.form.get('item')
+        if not item:
+            flash('Invalid delete request.', 'error')
+            return redirect(url_for('price_list'))
+
+        # Load current price list
+        price_list = load_price_list()
+
+        # Delete item
+        if item in price_list:
+            del price_list[item]
+            save_price_list(price_list)
+            flash('Item deleted successfully!', 'success')
+        else:
+            flash('Item not found.', 'error')
+    except Exception as e:
+        logging.error(f"Error deleting price: {str(e)}")
+        flash('Error deleting price. Please try again.', 'error')
+
+    return redirect(url_for('price_list'))
+
 @app.route('/update-price', methods=['POST'])
 def update_price():
     try:
