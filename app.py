@@ -84,7 +84,7 @@ def estimate():
             total_cost = line_items.sub_total
 
             return render_template('estimate.html',
-                                    project_details=project_details,
+                                    project_details=project_details.dict(),
                                     total_cost=total_cost,
                                     customer=customer,
                                     line_items=line_items)
