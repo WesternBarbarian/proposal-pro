@@ -86,7 +86,7 @@ def estimate():
             return render_template('estimate.html',
                                     project_details=project_details.dict(),
                                     total_cost=total_cost,
-                                    customer=customer,
+                                    customer=customer.dict(),
                                     line_items=line_items)
         except Exception as e:
             logging.error(f"Error processing estimate: {str(e)}")
