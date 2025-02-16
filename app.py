@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from flask import Flask, render_template, request, flash, redirect, url_for, make_response, session
+from markupsafe import Markup
 from flask_session import Session
 from flaskext.markdown import Markdown
 from flask_wtf import FlaskForm, CSRFProtect
