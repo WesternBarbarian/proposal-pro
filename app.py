@@ -3,6 +3,7 @@ import json
 import logging
 from flask import Flask, render_template, request, flash, redirect, url_for, make_response, session
 from flask_session import Session
+from flaskext.markdown import Markdown
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
@@ -29,6 +30,9 @@ app.config['WTF_CSRF_SECRET_KEY'] = app.config['SECRET_KEY']
 
 # Initialize Session
 Session(app)
+
+# Initialize Markdown
+Markdown(app)
 
 
 csrf = CSRFProtect()
