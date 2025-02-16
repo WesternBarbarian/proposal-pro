@@ -55,6 +55,16 @@ class Line_Items(BaseModel):
       return sum(line.total for line in self.lines)
 
 
+def extract_customer(description: str) -> dict:
+  prompt = f"Extract the structured data from {description}"
+  
+  response = client.models.generate_content(
+    model=model,
+    contents=prompt,
+    config={'response_mime_type': 'application/json', 'response_schema': Customer})
+
+  customer_info: Customer = response.parsed
+  return customer_info
 
 
 def analyze_project(description: str) -> dict:

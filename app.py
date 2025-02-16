@@ -6,7 +6,7 @@ from flask_session import Session
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
-from ai_helper import analyze_project, generate_proposal, Customer, generate_price_list, lookup_prices
+from ai_helper import analyze_project, extract_customer, generate_proposal, Customer, generate_price_list, lookup_prices
 
 # Configure logging
 logging.basicConfig(
@@ -73,17 +73,11 @@ def estimate():
     if form.validate_on_submit():
         try:
             # Extract customer information and project details using AI
-            project_details = analyze_project(form.project_description.data)
+            project_details, project_notes = analyze_project(form.project_description.data)
             price_list = load_price_list()
 
-            # Create Customer object from AI-extracted data
-            customer = Customer(
-                name=project_details.get('customer', {}).get('name', 'unknown'),
-                phone=project_details.get('customer', {}).get('phone', 'unknown'),
-                email=project_details.get('customer', {}).get('email', 'unknown'),
-                address=project_details.get('customer', {}).get('address', 'unknown'),
-                project_address=project_details.get('customer', {}).get('project_address', 'same')
-            )
+            customer = extract_customer(form.project_description.data)
+            
 
             # Get line items with prices
             line_items = lookup_prices(project_details, price_list)
