@@ -1,7 +1,7 @@
 {
     "Drywall": {
         "unit": "square foot",
-        "price": 2
+        "price": 3.0
     },
     "Posts": {
         "unit": "post",

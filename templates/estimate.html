@@ -6,7 +6,7 @@
 
     {% if form %}
     <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation">
-        {{ form.csrf_token }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="card mb-4">
             <div class="card-header">
                 <h4>Project Details</h4>
