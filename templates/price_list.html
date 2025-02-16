@@ -96,11 +96,30 @@
                     </div>
                     {% endif %}
                 </div>
-                {{ form.submit(class="btn btn-primary") }}
+                <button type="button" class="btn btn-primary" onclick="showWarningModal()">Generate Price List</button>
             </form>
         </div>
     </div>
         
+    </div>
+
+    <!-- Warning Modal -->
+    <div class="modal fade" id="warningModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-warning">⚠️ Warning</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This action will overwrite the existing price list and cannot be undone. Do you want to continue?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="submitPriceListForm()">Continue</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Edit Price Modal -->
@@ -137,6 +156,15 @@
 
 <!-- JavaScript for handling the edit modal -->
 <script>
+function showWarningModal() {
+    const modal = new bootstrap.Modal(document.getElementById('warningModal'));
+    modal.show();
+}
+
+function submitPriceListForm() {
+    document.querySelector('form[action="{{ url_for("generate_price_list_route") }}"]').submit();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const editButtons = document.querySelectorAll('.edit-price');
     editButtons.forEach(button => {
