@@ -1,5 +1,5 @@
 from google import genai
-
+from google.genai import types
 import os
 import json
 from pydantic import BaseModel, Field, computed_field
@@ -200,7 +200,7 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
     price_list = price_list
 
 
-    user_request= user_request
+    user_request= project_details
 
     prompt = f"Look up the prices from the {price_list} for the items in {user_request}"
     response = client.models.generate_content(
