@@ -214,10 +214,9 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
     )
 
     
-    Line_Items: Line_Items = response.parsed
+    line_items: Line_Items = response.parsed
    
-
-    return Line_Items
+    return line_items
 
 
 
