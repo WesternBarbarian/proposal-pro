@@ -87,6 +87,7 @@
         </div>
 
         <form method="POST" action="{{ url_for('create_proposal') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="project_details" value="{{ project_details|tojson }}">
             <input type="hidden" name="total_cost" value="{{ total_cost }}">
             <input type="hidden" name="customer" value="{{ customer|tojson }}">
