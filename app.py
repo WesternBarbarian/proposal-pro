@@ -57,7 +57,7 @@ def save_price_list(price_list):
         price_dict = {item.item: {"unit": item.unit, "price": item.price} for item in price_list.prices}
     else:
         price_dict = price_list
-        
+
     with open('price_list.json', 'w') as f:
         json.dump(price_dict, f, indent=4)
 
@@ -65,7 +65,7 @@ def save_price_list(price_list):
 def index():
     app.logger.info("Home route was accessed")  # Log an INFO message
     return render_template('index.html')
-    
+
 
 @app.route('/estimate', methods=['GET', 'POST'])
 def estimate():
@@ -77,17 +77,20 @@ def estimate():
             price_list = load_price_list()
 
             customer = extract_customer(form.project_description.data)
-            
+
 
             # Get line items with prices
             line_items = lookup_prices(project_details, price_list)
             total_cost = line_items.sub_total
 
+            # Convert Line_Items to dictionary for JSON serialization
+            line_items_dict = line_items.dict()
+
             return render_template('estimate.html',
                                     project_details=project_details.dict(),
                                     total_cost=total_cost,
                                     customer=customer.dict(),
-                                    line_items=line_items)
+                                    line_items=line_items_dict)
         except Exception as e:
             logging.error(f"Error processing estimate: {str(e)}")
             flash('Error processing your request. Please try again.', 'error')
@@ -138,7 +141,7 @@ def price_list():
     return render_template('price_list.html', 
                           form=form, 
                           current_prices=current_prices)
-    
+
 
 
 @app.route('/generate-price-list', methods=['POST'])
@@ -147,11 +150,11 @@ def generate_price_list_route():
     app.logger.debug(f"Headers: {dict(request.headers)}")
     app.logger.debug(f"CSRF Token from form: {request.form.get('csrf_token')}")
     app.logger.debug(f"CSRF Token from session: {session.get('csrf_token')}")
-    
+
     form = PriceListForm()
     app.logger.debug(f"Form errors: {form.errors}")
     app.logger.debug(f"Form validated: {form.validate()}")
-    
+
     if form.validate_on_submit():
         try:
             app.logger.info("Form validation successful")
