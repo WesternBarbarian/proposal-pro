@@ -88,10 +88,10 @@
 
         <form method="POST" action="{{ url_for('create_proposal') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="project_details" value="{{ project_details|tojson }}">
+            <input type="hidden" name="project_details" value='{{ project_details|tojson|safe }}'>
             <input type="hidden" name="total_cost" value="{{ total_cost }}">
-            <input type="hidden" name="customer" value="{{ customer|tojson }}">
-            <input type="hidden" name="line_items" value="{{ line_items|tojson }}">
+            <input type="hidden" name="customer" value='{{ customer|tojson|safe }}'>
+            <input type="hidden" name="line_items" value='{{ line_items|tojson|safe }}'>
             <button type="submit" class="btn btn-success">Generate Proposal</button>
         </form>
     </div>
