@@ -4,7 +4,7 @@ import logging
 from flask import Flask, render_template, request, flash, redirect, url_for, make_response, session
 from markupsafe import Markup
 from flask_session import Session
-from flaskext.markdown import Markdown
+import markdown2
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
@@ -33,7 +33,10 @@ app.config['WTF_CSRF_SECRET_KEY'] = app.config['SECRET_KEY']
 Session(app)
 
 # Initialize Markdown
-Markdown(app)
+markdown = markdown2.Markdown()
+
+# Register markdown filter
+app.jinja_env.filters['markdown'] = lambda text: Markup(markdown.convert(text))
 
 
 csrf = CSRFProtect()
