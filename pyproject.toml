@@ -18,4 +18,5 @@ dependencies = [
     "sift-stack-py>=0.3.3",
     "flask-session>=0.8.0",
     "flask-markdown>=0.3",
+    "markupsafe>=3.0.2",
 ]
