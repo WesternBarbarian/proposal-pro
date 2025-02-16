@@ -9,6 +9,7 @@
                 <i data-feather="edit"></i> Edit
             </button>
             <form method="POST" action="{{ url_for('save_proposal') }}" class="d-inline" id="downloadForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="edited_proposal" id="proposalContent">
                 <button type="submit" class="btn btn-primary">
                     <i data-feather="download"></i> Download as Markdown
