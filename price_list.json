@@ -1,10 +1,10 @@
 {
-    "Posts": {
-        "unit": "post",
-        "price": 20
+    "data inventory": {
+        "unit": "per",
+        "price": 500
     },
-    "Labor": {
-        "unit": "hour",
-        "price": 45
+    "group training": {
+        "unit": "per",
+        "price": 300
     }
 }
