@@ -6,7 +6,7 @@ from flask_session import Session
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
-from ai_helper import analyze_project, extract_customer, generate_proposal, Customer, generate_price_list, lookup_prices, Line_Items
+from ai_helper import analyze_project, extract_customer, generate_proposal, Customer, generate_price_list, lookup_prices, Line_Items, Line_Item
 
 # Configure logging
 logging.basicConfig(
