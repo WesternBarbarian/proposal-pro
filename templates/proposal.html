@@ -18,7 +18,6 @@
             <form method="POST" action="{{ url_for('save_to_drive') }}" class="d-inline" id="driveForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="proposal_content" id="driveProposalContent">
-                <input type="hidden" name="customer" value="{{ customer|tojson }}">
                 <button type="submit" class="btn btn-success">
                     <i data-feather="save"></i> Save to Google Drive
                 </button>
