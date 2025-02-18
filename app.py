@@ -119,6 +119,18 @@ def estimate():
             price_list = load_price_list()
 
             customer = extract_customer(form.project_description.data)
+            
+            # Track form data in Google Sheet if user is authenticated
+            if 'credentials' in session:
+                try:
+                    folder_id = create_folder_if_not_exists('proposal-pro')
+                    if folder_id:
+                        sheet_id = create_tracking_sheet_if_not_exists(folder_id)
+                        if sheet_id:
+                            values = [[form.project_description.data]]
+                            append_to_sheet(sheet_id, values)
+                except Exception as e:
+                    app.logger.error(f"Error tracking form data: {str(e)}")
 
 
             # Get line items with prices
