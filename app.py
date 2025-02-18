@@ -197,8 +197,8 @@ def save_to_drive():
             flash('Please log in to save to Google Drive.', 'error')
             return redirect(url_for('login'))
 
-        # Sanitize customer name for filename
-        safe_name = customer.name
+        # Get customer name from form
+        safe_name = request.form.get('customer_name', 'Unknown Customer')
         
         doc_id = create_doc_in_folder(
             f"Proposal - {safe_name} - {datetime.now().strftime('%Y-%m-%d')}",
