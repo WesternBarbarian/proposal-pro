@@ -2,5 +2,9 @@
     "Drywall": {
         "unit": "square feet",
         "price": 4.0
+    },
+    "labor": {
+        "unit": "hour",
+        "price": 45.0
     }
 }
