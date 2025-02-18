@@ -196,10 +196,8 @@ def save_to_drive():
             flash('Please log in to save to Google Drive.', 'error')
             return redirect(url_for('login'))
 
-        # Get customer name from the parsed customer data
-        customer_name = customer_data.get('name', 'Unknown')
-        # Sanitize for filename
-        safe_name = ''.join(char for char in customer_name 
+        # Sanitize customer name for filename
+        safe_name = ''.join(char for char in customer.name
                            if char.isalnum() or char in ' -_').strip()
         
         doc_id = create_doc_in_folder(
@@ -208,7 +206,7 @@ def save_to_drive():
             folder_id
         )
 
-        app.logger.info(f"Created document for customer: {customer_name}")
+        app.logger.info(f"Created document for customer: {customer.name}")
         
         flash('Proposal saved to Google Drive successfully!', 'success')
         return redirect(url_for('estimate'))
