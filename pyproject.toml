@@ -21,4 +21,7 @@ dependencies = [
     "markupsafe>=3.0.2",
     "flask-markdown2>=0.0.3",
     "markdown2>=2.5.3",
+    "google-auth>=2.38.0",
+    "google-auth-oauthlib>=1.2.1",
+    "google-auth-httplib2>=0.2.0",
 ]
