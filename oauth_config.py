@@ -4,9 +4,12 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 
 SCOPES = [
-    'https://www.googleapis.com/auth/drive.file',
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/documents'
+    'https://www.googleapis.com/auth/drive.file',  # For file/folder operations
+    'https://www.googleapis.com/auth/spreadsheets',  # For Google Sheets
+    'https://www.googleapis.com/auth/documents',  # For Google Docs
+    'https://www.googleapis.com/auth/userinfo.profile',  # Basic user info
+    'https://www.googleapis.com/auth/userinfo.email',  # User email
+    'openid'  # OpenID Connect
 ]
 
 def create_oauth_flow():
