@@ -71,8 +71,36 @@ def save_price_list(price_list):
 
 @app.route('/')
 def index():
-    app.logger.info("Home route was accessed")  # Log an INFO message
-    return render_template('index.html')
+    app.logger.info("Home route was accessed")
+    credentials = session.get('credentials')
+    return render_template('index.html', authenticated=credentials is not None)
+
+@app.route('/login')
+def login():
+    flow = create_oauth_flow()
+    authorization_url, state = flow.authorization_url()
+    session['state'] = state
+    return redirect(authorization_url)
+
+@app.route('/oauth2callback')
+def oauth2callback():
+    flow = create_oauth_flow()
+    flow.fetch_token(authorization_response=request.url)
+    credentials = flow.credentials
+    session['credentials'] = {
+        'token': credentials.token,
+        'refresh_token': credentials.refresh_token,
+        'token_uri': credentials.token_uri,
+        'client_id': credentials.client_id,
+        'client_secret': credentials.client_secret,
+        'scopes': credentials.scopes
+    }
+    return redirect('/')
+
+@app.route('/logout')
+def logout():
+    session.pop('credentials', None)
+    return redirect('/')
 
 
 @app.route('/estimate', methods=['GET', 'POST'])

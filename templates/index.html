@@ -1,6 +1,11 @@
-{% extends 'base.html' %}
-
+{% extends "base.html" %}
 {% block content %}
+    {% if not authenticated %}
+        <a href="{{ url_for('login') }}" class="btn btn-primary">Login with Google</a>
+    {% else %}
+        <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+    {% endif %}
+
 <div class="hero-section text-center">
     <h1 class="display-4">Smart Contractor Estimates</h1>
     <p class="lead">Generate professional proposals powered by AI</p>
