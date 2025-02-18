@@ -243,12 +243,18 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
 
 #Generate proposal
 def generate_proposal(project_details: dict, customer: Customer, line_items: Line_Items) -> str:
+    # Convert project details to a serializable format
+    project_dict = {
+        "notes": project_details.notes,
+        "details": [{"item": item.item, "quantity": item.quantity} for item in project_details.details]
+    }
+    
     prompt = f"""
     You are an estimator writing a new proposal for a client. Please proceed
     step-by-step:
 
     1. Please write the project briefing based on these notes:
-    Project Details: {json.dumps(project_details)}
+    Project Details: {json.dumps(project_dict)}
     Line Items: {json.dumps(line_items.dict())}
     
     2. Based on the above write a one-paragraph estimate to {customer.name} that
