@@ -99,7 +99,7 @@ def estimate():
             return render_template('estimate.html',
                                     project_details=project_details.dict(),
                                     total_cost=total_cost,
-                                    timeline = time_line,
+                                    timeline=project_details.time_line,
                                     customer=customer.dict(),
                                     line_items=line_items_dict)
         except Exception as e:
