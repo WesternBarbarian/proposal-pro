@@ -6,7 +6,7 @@ import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # Allow OAuth over HTTP for development
 from flask import Flask, render_template, request, flash, redirect, url_for, make_response, session
 from oauth_config import create_oauth_flow
-from google_services import create_folder_if_not_exists, create_doc_in_folder, create_tracking_sheet_if_not_exists, append_to_sheet
+from google_services import create_folder_if_not_exists, create_doc_in_folder, create_tracking_sheet_if_not_exists, append_to_sheet, get_sheets_service
 from markupsafe import Markup
 from flask_session import Session
 import markdown2
@@ -220,6 +220,11 @@ def save_to_drive():
             sheet_id = create_tracking_sheet_if_not_exists(folder_id)
             if sheet_id:
                 sheets_service = get_sheets_service()
+                result = sheets_service.spreadsheets().values().get(
+                    spreadsheetId=sheet_id,
+                    range='A:A'
+                ).execute()
+                last_row = len(result.get('values', [])) + 1
                 sheets_service.spreadsheets().values().update(
                     spreadsheetId=sheet_id,
                     range='C' + str(sheets_service.spreadsheets().values().get(
