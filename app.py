@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from datetime import datetime
 import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # Allow OAuth over HTTP for development
 from flask import Flask, render_template, request, flash, redirect, url_for, make_response, session
@@ -178,6 +179,32 @@ def save_proposal():
     except Exception as e:
         logging.error(f"Error saving proposal: {str(e)}")
         flash('Error saving proposal. Please try again.', 'error')
+        return redirect(url_for('estimate'))
+
+@app.route('/save-to-drive', methods=['POST'])
+def save_to_drive():
+    if 'credentials' not in session:
+        return redirect(url_for('login'))
+        
+    try:
+        content = request.form.get('proposal_content')
+        folder_id = create_folder_if_not_exists('proposal-pro')
+        
+        if not folder_id:
+            flash('Please log in to save to Google Drive.', 'error')
+            return redirect(url_for('login'))
+            
+        doc_id = create_doc_in_folder(
+            f"Proposal - {datetime.now().strftime('%Y-%m-%d')}",
+            content,
+            folder_id
+        )
+        
+        flash('Proposal saved to Google Drive successfully!', 'success')
+        return redirect(url_for('estimate'))
+    except Exception as e:
+        logging.error(f"Error saving to Google Drive: {str(e)}")
+        flash('Error saving to Google Drive. Please try again.', 'error')
         return redirect(url_for('estimate'))
 
 @app.route('/price-list', methods=['GET', 'POST'])

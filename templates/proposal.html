@@ -11,8 +11,15 @@
             <form method="POST" action="{{ url_for('save_proposal') }}" class="d-inline" id="downloadForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="edited_proposal" id="proposalContent">
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-primary me-2">
                     <i data-feather="download"></i> Download as Markdown
+                </button>
+            </form>
+            <form method="POST" action="{{ url_for('save_to_drive') }}" class="d-inline" id="driveForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="proposal_content" id="driveProposalContent">
+                <button type="submit" class="btn btn-success">
+                    <i data-feather="save"></i> Save to Google Drive
                 </button>
             </form>
         </div>
@@ -58,6 +65,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update hidden input before form submission
     downloadForm.addEventListener('submit', function() {
         proposalContent.value = proposalEditor.value;
+    });
+    
+    const driveForm = document.getElementById('driveForm');
+    const driveProposalContent = document.getElementById('driveProposalContent');
+    
+    driveForm.addEventListener('submit', function() {
+        driveProposalContent.value = proposalEditor.value;
     });
 });
 </script>
