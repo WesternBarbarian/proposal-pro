@@ -82,6 +82,7 @@ def estimate():
         try:
             # Extract customer information and project details using AI
             project_details = analyze_project(form.project_description.data)
+            app.logger.debug(f"Project details returned from analyze_project: {project_details}")
             price_list = load_price_list()
 
             customer = extract_customer(form.project_description.data)
