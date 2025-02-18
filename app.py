@@ -195,8 +195,11 @@ def save_to_drive():
             flash('Please log in to save to Google Drive.', 'error')
             return redirect(url_for('login'))
             
+        # Sanitize customer name for filename
+        customer_name = ''.join(char for char in customer_data['name'] 
+                              if char.isalnum() or char in ' -_').strip()
         doc_id = create_doc_in_folder(
-            f"Proposal - {datetime.now().strftime('%Y-%m-%d')}",
+            f"Proposal - {customer_name} - {datetime.now().strftime('%Y-%m-%d')}",
             content,
             folder_id
         )
