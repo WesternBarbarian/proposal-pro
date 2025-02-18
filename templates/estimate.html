@@ -95,7 +95,10 @@
             <input type="hidden" name="total_cost" value="{{ total_cost }}">
             <input type="hidden" name="customer" value='{{ customer|tojson|safe }}'>
             <input type="hidden" name="line_items" value='{{ line_items|tojson|safe }}'>
-            <button type="submit" class="btn btn-success">Generate Proposal</button>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">Generate Proposal</button>
+                <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Cancel</a>
+            </div>
         </form>
     </div>
     {% endif %}
