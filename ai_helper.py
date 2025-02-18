@@ -10,6 +10,9 @@ api_key= os.environ['GEMINI_API_KEY']
 client = genai.Client(api_key=api_key)
 model = "gemini-2.0-flash"
 
+
+##Extract Customer Information
+
 class Customer(BaseModel):
   name: str = Field(description="The name of the customer, if not visible, please return 'unknown'")
   phone: str = Field(description="The phone number of the customer, if not visible, please return 'unknown")
@@ -17,25 +20,74 @@ class Customer(BaseModel):
   address: str = Field(description="The address of the customer, if not visible, please return 'unknown")
   project_address: str = Field(description="The address of the project, if not visible, please return 'same")
 
-class Request(BaseModel):
-  item: str = Field(description="The name of the item, if unclear or not available")
-  quantity: int = Field(description="The quantity of items needed, if unclear or not available, please return zero")
-
-class Requests(BaseModel):
-  notes: str = Field(description="Any notes about the project, if any")
-  details: list[Request] = Field(description="The list of items with the item name and quantity.")
 
 
+def extract_customer(description: str) -> dict:
+  prompt = f"Extract the structured data from {description}"
+
+  response = client.models.generate_content(
+    model=model,
+    contents=prompt,
+    config={'response_mime_type': 'application/json', 'response_schema': Customer})
+
+  customer_info: Customer = response.parsed
+  return customer_info
+
+
+
+##Generate Price List
 class Item(BaseModel):
-    item: str = Field(description="The name of the item, if unclear are not available, please return 'unknown'")
-    unit: str = Field(description="The unit of the item, if unclear are not available, please return 'unknown'")
-    price: int = Field(description="The price of the item, if unclear or not available, please return zero")
+  item: str = Field(description="The name of the item, if unclear are not available, please return 'unknown'")
+  unit: str = Field(description="The unit of the item, if unclear are not available, please return 'unknown'")
+  price: int = Field(description="The price of the item, if unclear or not available, please return zero")
 
 
 class Items(BaseModel):
   prices: list[Item] = Field(description="The list of items with the item name, unit and price.")
 
 
+def generate_price_list(description: str) -> Items:
+  prompt = f"Extract the structured data from the following: {description}"
+
+  response = client.models.generate_content(
+      model=model,
+      contents=prompt,
+      config={'response_mime_type': 'application/json', 'response_schema': Items})
+
+  price_list: Items = response.parsed
+
+
+  return price_list
+
+
+##Project from description
+class Request(BaseModel):
+  item: str = Field(description="The name of the item, if unclear or not available")
+  quantity: int = Field(description="The quantity of items needed, if unclear or not available, please return zero")
+
+class Requests(BaseModel):
+  time_line: str = Field(description="Information about the timeline and expected dates, if any.")
+  notes: str = Field(description="Any notes about the project, if any")
+  details: list[Request] = Field(description="The list of items with the item name and quantity.")
+
+
+def analyze_project(description: str) -> dict:
+  prompt = f"Extract the structured data from {description}"
+
+  response = client.models.generate_content(
+      model=model,
+      contents=prompt,
+      config={'response_mime_type': 'application/json', 'response_schema': Requests})
+
+  user_request: Requests = response.parsed
+
+  #Read the 'notes' field into a variable
+ # project_notes = user_request.notes
+
+
+  return user_request  #, project_notes
+
+#Retrieve prices and calculate totals
 class Line_Item(BaseModel):
   name: str = Field(description="The name of the item, if unclear or not available, please return 'unknown'")
   unit: str = Field(description="The unit of the item, if unclear or not available, please return 'unknown'")
@@ -53,38 +105,8 @@ class Line_Items(BaseModel):
   def sub_total(self) -> int:
       """Calculates the sum of all line item totals."""
       return sum(line.total for line in self.lines)
-
-
-def extract_customer(description: str) -> dict:
-  prompt = f"Extract the structured data from {description}"
-  
-  response = client.models.generate_content(
-    model=model,
-    contents=prompt,
-    config={'response_mime_type': 'application/json', 'response_schema': Customer})
-
-  customer_info: Customer = response.parsed
-  return customer_info
-
-
-def analyze_project(description: str) -> dict:
-    prompt = f"Extract the structured data from {description}"
-
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt,
-        config={'response_mime_type': 'application/json', 'response_schema': Requests})
-
-    user_request: Requests = response.parsed
-
-    #Read the 'notes' field into a variable
-    project_notes = user_request.notes
-
-
-    return user_request, project_notes
    
     
-
 def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
     sys_instruct="""##Role: You are a pricing specialist.
     You look up the price of items from the provided list.
@@ -220,21 +242,7 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
 
 
 
-
-
-def generate_price_list(description: str) -> Items:
-    prompt = f"Extract the structured data from the following: {description}"
-
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt,
-        config={'response_mime_type': 'application/json', 'response_schema': Items})
-
-    price_list: Items = response.parsed
-    
-
-    return price_list
-
+#Generate proposal
 def generate_proposal(project_details: dict, customer: Customer, line_items: Line_Items) -> str:
     prompt = f""""
     You are an estimator writing a new proposal for a client. Please proceed

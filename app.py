@@ -81,7 +81,7 @@ def estimate():
     if form.validate_on_submit():
         try:
             # Extract customer information and project details using AI
-            project_details, project_notes = analyze_project(form.project_description.data)
+            project_details = analyze_project(form.project_description.data)
             price_list = load_price_list()
 
             customer = extract_customer(form.project_description.data)
@@ -94,9 +94,12 @@ def estimate():
             # Convert Line_Items to dictionary for JSON serialization
             line_items_dict = line_items.dict()
 
+            
+            
             return render_template('estimate.html',
                                     project_details=project_details.dict(),
                                     total_cost=total_cost,
+                                    timeline = time_line,
                                     customer=customer.dict(),
                                     line_items=line_items_dict)
         except Exception as e:
