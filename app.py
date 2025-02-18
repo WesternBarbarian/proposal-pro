@@ -195,15 +195,20 @@ def save_to_drive():
         if not folder_id:
             flash('Please log in to save to Google Drive.', 'error')
             return redirect(url_for('login'))
-            
-        # Sanitize customer name for filename
-        customer_name = ''.join(char for char in customer_data.get('name', 'Unknown') 
-                              if char.isalnum() or char in ' -_').strip()
+
+        # Get customer name from the parsed customer data
+        customer_name = customer_data.get('name', 'Unknown')
+        # Sanitize for filename
+        safe_name = ''.join(char for char in customer_name 
+                           if char.isalnum() or char in ' -_').strip()
+        
         doc_id = create_doc_in_folder(
-            f"Proposal - {customer_name} - {datetime.now().strftime('%Y-%m-%d')}",
+            f"Proposal - {safe_name} - {datetime.now().strftime('%Y-%m-%d')}",
             content,
             folder_id
         )
+
+        app.logger.info(f"Created document for customer: {customer_name}")
         
         flash('Proposal saved to Google Drive successfully!', 'success')
         return redirect(url_for('estimate'))
