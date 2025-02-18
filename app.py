@@ -196,7 +196,7 @@ def save_to_drive():
             return redirect(url_for('login'))
             
         doc_id = create_doc_in_folder(
-            f"Proposal - {datetime.now().strftime('%Y-%m-%d')}",
+            f"Proposal for {project_details.customer.name} - {datetime.now().strftime('%Y-%m-%d')}",
             content,
             folder_id
         )
