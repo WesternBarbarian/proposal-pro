@@ -78,14 +78,14 @@ def index():
 
 @app.route('/login')
 def login():
-    flow = create_oauth_flow()
+    flow = create_oauth_flow(request.base_url)
     authorization_url, state = flow.authorization_url()
     session['state'] = state
     return redirect(authorization_url)
 
 @app.route('/oauth2callback')
 def oauth2callback():
-    flow = create_oauth_flow()
+    flow = create_oauth_flow(request.base_url)
     flow.fetch_token(authorization_response=request.url)
     credentials = flow.credentials
     session['credentials'] = {

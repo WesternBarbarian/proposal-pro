@@ -13,6 +13,11 @@ SCOPES = [
     'openid'  # OpenID Connect
 ]
 
-def create_oauth_flow():
+def create_oauth_flow(request_url=None):
     client_secrets = json.loads(os.getenv("GOOGLE_OAUTH_SECRETS"))
-    return Flow.from_client_config(client_secrets, scopes=SCOPES)
+    flow = Flow.from_client_config(client_secrets, scopes=SCOPES)
+    if request_url:
+        # Get the base URL from the request
+        base_url = request_url.rstrip('/').rsplit('/', 1)[0]
+        flow.redirect_uri = f"{base_url}/oauth2callback"
+    return flow
