@@ -163,7 +163,8 @@ def create_proposal():
         app.logger.debug(f"Customer Data: {customer}")
         return render_template('proposal.html', 
                             proposal=proposal,
-                            raw_proposal=proposal)  # For markdown editing
+                            raw_proposal=proposal,  # For markdown editing
+                            customer=customer)
     except Exception as e:
         logging.error(f"Error generating proposal: {str(e)}")
         flash('Error generating proposal. Please try again.', 'error')
