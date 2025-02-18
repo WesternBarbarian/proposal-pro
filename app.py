@@ -190,10 +190,8 @@ def save_to_drive():
         
     try:
         content = request.form.get('proposal_content')
-        if not content:
-            flash('No content to save', 'error')
-            return redirect(url_for('estimate'))
-            
+        
+        
         folder_id = create_folder_if_not_exists('proposal-pro')
         
         if not folder_id:

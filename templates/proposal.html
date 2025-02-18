@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const driveProposalContent = document.getElementById('driveProposalContent');
     
     driveForm.addEventListener('submit', function() {
-        driveProposalContent.value = editMode.classList.contains('d-none') ? proposalEditor.value : proposalEditor.value;
+        driveProposalContent.value = proposalEditor.value;
     });
 });
 </script>
