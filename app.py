@@ -189,7 +189,7 @@ def save_to_drive():
         
     try:
         content = request.form.get('proposal_content')
-        customer = Customer(**json.loads(request.form.get('customer')))
+        
         
         folder_id = create_folder_if_not_exists('proposal-pro')
         
