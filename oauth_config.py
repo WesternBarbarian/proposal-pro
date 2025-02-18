@@ -1,5 +1,6 @@
 
 import os
+import json
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 
@@ -13,13 +14,5 @@ SCOPES = [
 ]
 
 def create_oauth_flow():
-    client_config = {
-        "web": {
-            "client_id": os.getenv("GOOGLE_CLIENT_ID"),
-            "client_secret": os.getenv("GOOGLE_CLIENT_SECRET"),
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [os.getenv("OAUTH_REDIRECT_URI")]
-        }
-    }
-    return Flow.from_client_config(client_config, scopes=SCOPES)
+    client_secrets = json.loads(os.getenv("GOOGLE_OAUTH_SECRETS"))
+    return Flow.from_client_config(client_secrets, scopes=SCOPES)
