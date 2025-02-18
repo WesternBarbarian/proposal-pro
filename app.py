@@ -127,7 +127,7 @@ def estimate():
                     if folder_id:
                         sheet_id = create_tracking_sheet_if_not_exists(folder_id)
                         if sheet_id:
-                            values = [[form.project_description.data, json.dumps(project_details.dict())]]
+                            values = [[form.project_description.data, json.dumps(line_items.dict())]]
                             append_to_sheet(sheet_id, values)
                 except Exception as e:
                     app.logger.error(f"Error tracking form data: {str(e)}")
