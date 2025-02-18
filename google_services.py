@@ -52,7 +52,7 @@ def create_tracking_sheet_if_not_exists(folder_id):
     ).execute()
     
     # Write header
-    sheet_values = [['Form Data', 'Estimate HTML']]
+    sheet_values = [['Form Data', 'Project Details']]
     sheets_service.spreadsheets().values().update(
         spreadsheetId=spreadsheet['spreadsheetId'],
         range='A1',
