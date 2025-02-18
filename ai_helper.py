@@ -66,7 +66,7 @@ class Request(BaseModel):
   quantity: int = Field(description="The quantity of items needed, if unclear or not available, please return zero")
 
 class Requests(BaseModel):
-  notes: str = Field(description="Any notes about the project, if any")
+  notes: str = Field(description="Notes about the project, if any")
   details: list[Request] = Field(description="The list of items with the item name and quantity.")
 
 
