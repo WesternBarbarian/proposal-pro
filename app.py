@@ -212,6 +212,25 @@ def save_to_drive():
         if not folder_id:
             flash('Please log in to save to Google Drive.', 'error')
             return redirect(url_for('login'))
+            
+        content = request.form.get('proposal_content')
+        
+        # Update the last row of tracking sheet with proposal content
+        try:
+            sheet_id = create_tracking_sheet_if_not_exists(folder_id)
+            if sheet_id:
+                sheets_service = get_sheets_service()
+                sheets_service.spreadsheets().values().update(
+                    spreadsheetId=sheet_id,
+                    range='C' + str(sheets_service.spreadsheets().values().get(
+                        spreadsheetId=sheet_id,
+                        range='A:A'
+                    ).execute().get('values', []).__len__()),
+                    valueInputOption='RAW',
+                    body={'values': [[content]]}
+                ).execute()
+        except Exception as e:
+            app.logger.error(f"Error updating tracking sheet with proposal: {str(e)}")
 
         # Get customer name from form
         safe_name = request.form.get('customer_name', 'Unknown Customer')
