@@ -124,6 +124,9 @@ def estimate():
             if 'credentials' in session:
                 try:
                     folder_id = create_folder_if_not_exists('proposal-pro')
+                    # Get line items with prices
+                    line_items = lookup_prices(project_details, price_list)
+                    
                     if folder_id:
                         sheet_id = create_tracking_sheet_if_not_exists(folder_id)
                         if sheet_id:
