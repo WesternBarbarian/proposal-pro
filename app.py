@@ -189,6 +189,7 @@ def save_to_drive():
         
     try:
         content = request.form.get('proposal_content')
+        customer_data = json.loads(request.form.get('customer'))
         
         folder_id = create_folder_if_not_exists('proposal-pro')
         
@@ -196,9 +197,9 @@ def save_to_drive():
             flash('Please log in to save to Google Drive.', 'error')
             return redirect(url_for('login'))
 
-        customer = Customer(**request.form.get('customer'))
+        customer = Customer(**customer_data)
         # Sanitize customer name for filename
-        safe_name = customer.name
+        safe_name = customer.name customer.name
         
         doc_id = create_doc_in_folder(
             f"Proposal - {safe_name} - {datetime.now().strftime('%Y-%m-%d')}",
