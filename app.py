@@ -160,7 +160,7 @@ def create_proposal():
 
         customer = Customer(**customer_data)
         proposal = generate_proposal(project_details, customer, line_items)
-
+        app.logger.debug(f"Customer Data: {customer}")
         return render_template('proposal.html', 
                             proposal=proposal,
                             raw_proposal=proposal)  # For markdown editing
