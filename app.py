@@ -196,6 +196,7 @@ def save_to_drive():
             flash('Please log in to save to Google Drive.', 'error')
             return redirect(url_for('login'))
 
+        customer = Customer(**request.form.get('customer'))
         # Sanitize customer name for filename
         safe_name = customer.name
         
