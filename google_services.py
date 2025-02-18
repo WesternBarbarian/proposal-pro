@@ -36,13 +36,19 @@ def create_tracking_sheet_if_not_exists(folder_id):
     
     # Create new sheet
     sheet_metadata = {
-        'properties': {'title': 'tracking'},
-        'parents': [folder_id]
+        'properties': {'title': 'tracking'}
     }
     
     spreadsheet = sheets_service.spreadsheets().create(
         body=sheet_metadata,
         fields='spreadsheetId'
+    ).execute()
+    
+    # Move file to correct folder
+    drive_service.files().update(
+        fileId=spreadsheet['spreadsheetId'],
+        addParents=folder_id,
+        fields='id, parents'
     ).execute()
     
     # Write header
