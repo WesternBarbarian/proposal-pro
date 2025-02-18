@@ -6,7 +6,7 @@ import os
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # Allow OAuth over HTTP for development
 from flask import Flask, render_template, request, flash, redirect, url_for, make_response, session
 from oauth_config import create_oauth_flow
-from google_services import create_folder_if_not_exists, create_doc_in_folder
+from google_services import create_folder_if_not_exists, create_doc_in_folder, create_tracking_sheet_if_not_exists, append_to_sheet
 from markupsafe import Markup
 from flask_session import Session
 import markdown2
