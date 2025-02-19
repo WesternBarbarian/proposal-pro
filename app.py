@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from datetime import datetime
-import os
+import requests
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # Allow OAuth over HTTP for development
 from flask import Flask, render_template, request, flash, redirect, url_for, make_response, session
 from oauth_config import create_oauth_flow
