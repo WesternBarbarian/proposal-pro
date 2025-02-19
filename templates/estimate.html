@@ -24,6 +24,14 @@
                     </div>
                     {% endif %}
                 </div>
+                <div class="mb-3">
+                    {{ form.file.label(class="form-label") }}
+                    <input type="file" class="form-control" id="file" name="file" accept=".pdf,.png,.jpeg,.jpg,.heic">
+                    <div class="progress mt-2 d-none" id="upload-progress">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="upload-error" class="alert alert-danger mt-2 d-none"></div>
+                </div>
             </div>
         </div>
 

@@ -47,8 +47,12 @@ app.jinja_env.filters['markdown'] = lambda text: Markup(markdown.convert(text))
 csrf = CSRFProtect()
 csrf.init_app(app)
 
+from flask_wtf.file import FileField, FileAllowed
 class ProjectForm(FlaskForm):
     project_description = TextAreaField('Project Description', validators=[DataRequired()])
+    file = FileField('Upload File (Optional)', validators=[
+        FileAllowed(['pdf', 'png', 'jpg', 'jpeg', 'heic'], 'Only PDF, PNG, JPEG, and HEIC files allowed!')
+    ])
     submit = SubmitField('Generate Estimate')
 
 class PriceListForm(FlaskForm):
@@ -127,6 +131,10 @@ def estimate():
     form = ProjectForm()
     if form.validate_on_submit():
         try:
+            file_info = "No file uploaded"
+            if form.file.data:
+                file = form.file.data
+                file_info = f"File upload: {file.filename}"
             # Extract customer information and project details using AI
             project_details = analyze_project(form.project_description.data)
             app.logger.debug(f"Project details returned from analyze_project: {project_details}")
@@ -144,7 +152,7 @@ def estimate():
                     if folder_id:
                         sheet_id = create_tracking_sheet_if_not_exists(folder_id)
                         if sheet_id:
-                            values = [[form.project_description.data, json.dumps(line_items.dict())]]
+                            values = [[form.project_description.data, json.dumps(line_items.dict()), file_info]]
                             append_to_sheet(sheet_id, values)
                 except Exception as e:
                     app.logger.error(f"Error tracking form data: {str(e)}")
