@@ -74,11 +74,25 @@ def save_price_list(price_list):
     with open('price_list.json', 'w') as f:
         json.dump(price_dict, f, indent=4)
 
+ALLOWED_USERS = ['client@example.com']  # Replace with actual allowed emails
+ALLOWED_DOMAINS = ['clientcompany.com']  # Replace with allowed domains
+
+def is_user_allowed(email):
+    return (email in ALLOWED_USERS or 
+            any(email.endswith('@' + domain) for domain in ALLOWED_DOMAINS))
+
 @app.route('/')
 def index():
     app.logger.info("Home route was accessed")
     credentials = session.get('credentials')
-    return render_template('index.html', authenticated=credentials is not None)
+    if credentials:
+        user_info = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
+            headers={'Authorization': f'Bearer {credentials["token"]}'}).json()
+        if is_user_allowed(user_info.get('email')):
+            return render_template('index.html', authenticated=True)
+        session.clear()
+        return "Access Denied", 403
+    return render_template('index.html', authenticated=False)
 
 @app.route('/login')
 def login():
