@@ -49,8 +49,8 @@ csrf.init_app(app)
 
 from flask_wtf.file import FileField, FileAllowed
 class ProjectForm(FlaskForm):
-    project_description = TextAreaField('Project Description', validators=[DataRequired()])
-    file = FileField('Upload File (Optional)', validators=[
+    project_description = TextAreaField('Project Description')
+    file = FileField('Upload File', validators=[
         FileAllowed(['pdf', 'png', 'jpg', 'jpeg', 'heic'], 'Only PDF, PNG, JPEG, and HEIC files allowed!')
     ])
     submit = SubmitField('Generate Estimate')
@@ -132,11 +132,21 @@ def estimate():
     if form.validate_on_submit():
         try:
             file_info = "No file uploaded"
+            project_data = ""
+            
             if form.file.data:
                 file = form.file.data
                 file_info = f"File upload: {file.filename}"
+                project_data = str(file.read())  # Convert file content to string
+            elif form.project_description.data:
+                project_data = form.project_description.data
+                
+            if not project_data:
+                flash('Please provide either a file or project description.', 'error')
+                return redirect(url_for('estimate'))
+                
             # Extract customer information and project details using AI
-            project_details = analyze_project(form.project_description.data)
+            project_details = analyze_project(project_data)
             app.logger.debug(f"Project details returned from analyze_project: {project_details}")
             price_list = load_price_list()
 
