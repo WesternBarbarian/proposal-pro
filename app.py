@@ -90,12 +90,24 @@ def index():
     app.logger.info("Home route was accessed")
     credentials = session.get('credentials')
     if credentials:
-        user_info = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
-            headers={'Authorization': f'Bearer {credentials["token"]}'}).json()
-        if is_user_allowed(user_info.get('email')):
-            return render_template('index.html', authenticated=True)
-        session.clear()
-        return "Access Denied", 403
+        try:
+            response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
+                headers={'Authorization': f'Bearer {credentials["token"]}'})
+            if response.status_code == 401:
+                # Token expired or invalid
+                session.clear()
+                return render_template('index.html', authenticated=False)
+                
+            user_info = response.json()
+            email = user_info.get('email')
+            if email and is_user_allowed(email):
+                return render_template('index.html', authenticated=True)
+            session.clear()
+            return "Access Denied", 403
+        except Exception as e:
+            app.logger.error(f"Auth error: {str(e)}")
+            session.clear()
+            return render_template('index.html', authenticated=False)
     return render_template('index.html', authenticated=False)
 
 @app.route('/login')
