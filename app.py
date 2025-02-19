@@ -187,6 +187,8 @@ def estimate():
             
             if "429 RESOURCE_EXHAUSTED" in error_msg:
                 flash('The AI service is currently at capacity. Please wait a few minutes and try again.', 'error')
+            elif "Request payload size exceeds the limit" in error_msg:
+                flash('The uploaded file is too large. Please reduce the file size or use a smaller file.', 'error')
             else:
                 flash('Error processing your request. Please try again.', 'error')
             return redirect(url_for('estimate'))
