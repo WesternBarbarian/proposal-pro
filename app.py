@@ -75,7 +75,7 @@ def save_price_list(price_list):
         json.dump(price_dict, f, indent=4)
 
 ALLOWED_USERS = ['client@example.com']  # Replace with actual allowed emails
-ALLOWED_DOMAINS = ['clientcompany.com']  # Replace with allowed domains
+ALLOWED_DOMAINS = ['cyborguprising.com']  # Replace with allowed domains
 
 def is_user_allowed(email):
     return (email in ALLOWED_USERS or 
