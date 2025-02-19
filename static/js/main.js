@@ -1,4 +1,14 @@
 // Handle file uploads
+function handleFileSubmit(event) {
+    const fileInput = document.getElementById('file');
+    if (fileInput && fileInput.files.length > 0) {
+        event.preventDefault();
+        handleFileUpload(fileInput.files[0], event.target);
+        return false;
+    }
+    return true;
+}
+
 function handleFileUpload(file, form) {
     const progressBar = document.getElementById('upload-progress');
     const progressBarInner = progressBar.querySelector('.progress-bar');
