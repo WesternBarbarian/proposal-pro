@@ -1096,6 +1096,7 @@ dependencies = [
     { name = "openai" },
     { name = "psycopg2-binary" },
     { name = "pydantic" },
+    { name = "requests" },
     { name = "sift-stack-py" },
     { name = "wtforms" },
 ]
@@ -1121,6 +1122,7 @@ requires-dist = [
     { name = "openai", specifier = ">=1.63.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.10" },
     { name = "pydantic", specifier = ">=2.10.6" },
+    { name = "requests", specifier = ">=2.32.3" },
     { name = "sift-stack-py", specifier = ">=0.3.3" },
     { name = "wtforms", specifier = ">=3.2.1" },
 ]
