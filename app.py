@@ -190,9 +190,9 @@ def estimate():
 
             
             return render_template('estimate.html',
-                                    project_details=project_details.dict(),
+                                    project_details=project_details,
                                     total_cost=total_cost,
-                                    customer=customer.dict(),
+                                    customer=customer,
                                     line_items=line_items_dict)
         except Exception as e:
             error_msg = str(e)
