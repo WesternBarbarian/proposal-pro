@@ -290,7 +290,7 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
 
 
 #Generate proposal
-def generate_proposal(project_details: dict, customer: Customer, line_items: Line_Items) -> str:
+def generate_proposal(project_details: dict, customer: dict, line_items: Line_Items) -> str:
     prompt = f""""
     You are an estimator writing a new proposal for a client. Please proceed
     step-by-step:
@@ -298,7 +298,7 @@ def generate_proposal(project_details: dict, customer: Customer, line_items: Lin
     1. Please write the project briefing based on these notes:
     {project_details} and this estimate: {line_items}. It is OK if
     some amounts are zero.
-    2. Based on the above write a one-paragraph estimate to {customer} that
+    2. Based on the above write a one-paragraph estimate to {customer['name']} that
     explains the cost estimate for this project, as well as the
     anticipated timeline. Base it on the project briefing you
     just wrote, the project_notes and the Line_Items.
