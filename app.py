@@ -147,16 +147,21 @@ def estimate():
             if form.file.data:
                 file = form.file.data
                 file_info = f"File upload: {file.filename}"
-                project_data = str(file.read())  # Convert file content to string
+                # Save file temporarily
+                temp_path = f"temp_{file.filename}"
+                file.save(temp_path)
+                try:
+                    project_details = analyze_project_image(temp_path)
+                finally:
+                    # Clean up temporary file
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
             elif form.project_description.data:
                 project_data = form.project_description.data
-                
-            if not project_data:
-                flash('Please provide either a file or project description.', 'error')
-                return redirect(url_for('estimate'))
-                
-            # Extract customer information and project details using AI
-            project_details = analyze_project(project_data)
+                if not project_data:
+                    flash('Please provide either a file or project description.', 'error')
+                    return redirect(url_for('estimate'))
+                project_details = analyze_project(project_data)
             app.logger.debug(f"Project details returned from analyze_project: {project_details}")
             price_list = load_price_list()
 
