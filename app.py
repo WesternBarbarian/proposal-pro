@@ -220,13 +220,12 @@ def create_proposal():
             Line_Item(**item) for item in line_items_data['lines']
         ])
 
-        customer = Customer(**customer_data)
-        proposal = generate_proposal(project_details, customer, line_items)
-        app.logger.debug(f"Customer Data: {customer}")
+        proposal = generate_proposal(project_details, customer_data, line_items)
+        app.logger.debug(f"Customer Data: {customer_data}")
         return render_template('proposal.html', 
                             proposal=proposal,
                             raw_proposal=proposal,  # For markdown editing
-                            customer=customer)
+                            customer=customer_data)
     except Exception as e:
         logging.error(f"Error generating proposal: {str(e)}")
         flash('Error generating proposal. Please try again.', 'error')
