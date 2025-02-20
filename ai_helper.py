@@ -37,7 +37,7 @@ class ProjectData(BaseModel):
     project_address: str = Field(description="The address of the project, if not visible, please return 'same")
     # Project information
     notes: str = Field(description="Notes about the project, if any")
-    details: list[Requests] = Field(description="The list of items with the item name and quantity.")
+    details: list[Request] = Field(description="The list of items with the item name and quantity.")
 
 def extract_project_data(description: str) -> tuple[dict, dict]:
     prompt = f"Extract the structured data from {description}"
