@@ -85,9 +85,12 @@ def analyze_project_image(file_path: str) -> dict:
   img_file = client.files.upload(file=file_path, config={'display_name': 'project_details'})
   
   prompt = "Extract the structured data from the following file"
-  response = client.models.generate_content(model=model, contents=[prompt, img_file])
+  response = client.models.generate_content(
+      model=model,
+      contents=[prompt, img_file],
+      config={'response_mime_type': 'application/json', 'response_schema': Requests}
+  )
   user_request: Requests = response.parsed
-
   return user_request
 
 #Retrieve prices and calculate totals
