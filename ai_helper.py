@@ -10,8 +10,23 @@ api_key= os.environ['GEMINI_API_KEY']
 client = genai.Client(api_key=api_key)
 model = "gemini-2.0-flash"
 
+##Project from description
+class Request(BaseModel):
+  item: str = Field(description="The name of the item, if unclear or not available")
+  quantity: int = Field(description="The quantity of items needed, if unclear or not available, please return zero")
 
-##Extract Customer Information
+class Requests(BaseModel):
+  notes: str = Field(description="Notes about the project, if any")
+  details: list[Request] = Field(description="The list of items with the item name and quantity.")
+
+class Item(BaseModel):
+  item: str = Field(description="The name of the item, if unclear are not available, please return 'unknown'")
+  unit: str = Field(description="The unit of the item, if unclear are not available, please return 'unknown'")
+  price: int = Field(description="The price of the item, if unclear or not available, please return zero")
+
+
+class Items(BaseModel):
+  prices: list[Item] = Field(description="The list of items with the item name, unit and price.")
 
 class ProjectData(BaseModel):
     # Customer information
@@ -22,7 +37,7 @@ class ProjectData(BaseModel):
     project_address: str = Field(description="The address of the project, if not visible, please return 'same")
     # Project information
     notes: str = Field(description="Notes about the project, if any")
-    details: list[Request] = Field(description="The list of items with the item name and quantity.")
+    details: list[Requests] = Field(description="The list of items with the item name and quantity.")
 
 def extract_project_data(description: str) -> tuple[dict, dict]:
     prompt = f"Extract the structured data from {description}"
@@ -77,16 +92,6 @@ def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
     
     return customer, project
 
-##Generate Price List
-class Item(BaseModel):
-  item: str = Field(description="The name of the item, if unclear are not available, please return 'unknown'")
-  unit: str = Field(description="The unit of the item, if unclear are not available, please return 'unknown'")
-  price: int = Field(description="The price of the item, if unclear or not available, please return zero")
-
-
-class Items(BaseModel):
-  prices: list[Item] = Field(description="The list of items with the item name, unit and price.")
-
 
 def generate_price_list(description: str) -> Items:
   prompt = f"Extract the structured data from the following: {description}"
@@ -102,14 +107,7 @@ def generate_price_list(description: str) -> Items:
   return price_list
 
 
-##Project from description
-class Request(BaseModel):
-  item: str = Field(description="The name of the item, if unclear or not available")
-  quantity: int = Field(description="The quantity of items needed, if unclear or not available, please return zero")
 
-class Requests(BaseModel):
-  notes: str = Field(description="Notes about the project, if any")
-  details: list[Request] = Field(description="The list of items with the item name and quantity.")
 
 
 def analyze_project(description: str) -> dict:
