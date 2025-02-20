@@ -13,26 +13,69 @@ model = "gemini-2.0-flash"
 
 ##Extract Customer Information
 
-class Customer(BaseModel):
-  name: str = Field(description="The name of the customer, if not visible, please return 'unknown'")
-  phone: str = Field(description="The phone number of the customer, if not visible, please return 'unknown")
-  email: str = Field(description="The email address of the customer, if not visible, please return 'unknown")
-  address: str = Field(description="The address of the customer, if not visible, please return 'unknown")
-  project_address: str = Field(description="The address of the project, if not visible, please return 'same")
+class ProjectData(BaseModel):
+    # Customer information
+    customer_name: str = Field(description="The name of the customer, if not visible, please return 'unknown'")
+    customer_phone: str = Field(description="The phone number of the customer, if not visible, please return 'unknown")
+    customer_email: str = Field(description="The email address of the customer, if not visible, please return 'unknown")
+    customer_address: str = Field(description="The address of the customer, if not visible, please return 'unknown")
+    project_address: str = Field(description="The address of the project, if not visible, please return 'same")
+    # Project information
+    notes: str = Field(description="Notes about the project, if any")
+    details: list[Request] = Field(description="The list of items with the item name and quantity.")
 
+def extract_project_data(description: str) -> tuple[dict, dict]:
+    prompt = f"Extract the structured data from {description}"
 
+    response = client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config={'response_mime_type': 'application/json', 'response_schema': ProjectData})
 
-def extract_customer(description: str) -> dict:
-  prompt = f"Extract the structured data from {description}"
+    project_data: ProjectData = response.parsed
+    
+    # Convert to separate customer and project dictionaries for backward compatibility
+    customer = {
+        "name": project_data.customer_name,
+        "phone": project_data.customer_phone,
+        "email": project_data.customer_email,
+        "address": project_data.customer_address,
+        "project_address": project_data.project_address
+    }
+    
+    project = {
+        "notes": project_data.notes,
+        "details": [{"item": detail.item, "quantity": detail.quantity} for detail in project_data.details]
+    }
+    
+    return customer, project
 
-  response = client.models.generate_content(
-    model=model,
-    contents=prompt,
-    config={'response_mime_type': 'application/json', 'response_schema': Customer})
-
-  customer_info: Customer = response.parsed
-  return customer_info
-
+def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
+    img_file = client.files.upload(file=file_path, config={'display_name': 'project_details'})
+    
+    prompt = "Extract the structured data from the following file"
+    response = client.models.generate_content(
+        model=model,
+        contents=[prompt, img_file],
+        config={'response_mime_type': 'application/json', 'response_schema': ProjectData}
+    )
+    project_data: ProjectData = response.parsed
+    
+    # Convert to separate customer and project dictionaries for backward compatibility
+    customer = {
+        "name": project_data.customer_name,
+        "phone": project_data.customer_phone,
+        "email": project_data.customer_email,
+        "address": project_data.customer_address,
+        "project_address": project_data.project_address
+    }
+    
+    project = {
+        "notes": project_data.notes,
+        "details": [{"item": detail.item, "quantity": detail.quantity} for detail in project_data.details]
+    }
+    
+    return customer, project
 
 ##Generate Price List
 class Item(BaseModel):

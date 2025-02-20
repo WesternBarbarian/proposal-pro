@@ -151,7 +151,7 @@ def estimate():
                 temp_path = f"temp_{file.filename}"
                 file.save(temp_path)
                 try:
-                    project_details = analyze_project_image(temp_path)
+                    customer, project_details = extract_project_data_from_image(temp_path)
                 finally:
                     # Clean up temporary file
                     if os.path.exists(temp_path):
@@ -161,11 +161,9 @@ def estimate():
                 if not project_data:
                     flash('Please provide either a file or project description.', 'error')
                     return redirect(url_for('estimate'))
-                project_details = analyze_project(project_data)
+                customer, project_details = extract_project_data(project_data)
             app.logger.debug(f"Project details returned from analyze_project: {project_details}")
             price_list = load_price_list()
-
-            customer = extract_customer(form.project_description.data)
             
             # Track form data in Google Sheet if user is authenticated
             if 'credentials' in session:
