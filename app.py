@@ -21,8 +21,6 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
-
-
 app = Flask(__name__)
 
 app.logger.setLevel(logging.DEBUG)

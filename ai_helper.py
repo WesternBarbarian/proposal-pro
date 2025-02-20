@@ -34,7 +34,6 @@ def extract_customer(description: str) -> dict:
   return customer_info
 
 
-
 ##Generate Price List
 class Item(BaseModel):
   item: str = Field(description="The name of the item, if unclear are not available, please return 'unknown'")
@@ -79,12 +78,17 @@ def analyze_project(description: str) -> dict:
       config={'response_mime_type': 'application/json', 'response_schema': Requests})
 
   user_request: Requests = response.parsed
+  
+  return user_request
 
-  #Read the 'notes' field into a variable
- # project_notes = user_request.notes
+def analyze_project_image(file_path: str) -> dict:
+  img_file = client.files.upload(file=file_path, config={'display_name': 'project_details'})
+  
+  prompt = "Extract the structured data from the following file"
+  response = client.models.generate_content(model=model, contents=[prompt, img_file])
+  user_request: Requests = response.parsed
 
-
-  return user_request  #, project_notes
+  return user_request
 
 #Retrieve prices and calculate totals
 class Line_Item(BaseModel):
