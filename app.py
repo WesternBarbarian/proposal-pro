@@ -54,7 +54,10 @@ class ProjectForm(FlaskForm):
     submit = SubmitField('Generate Estimate')
 
 class PriceListForm(FlaskForm):
-    price_description = TextAreaField('Price Description', validators=[DataRequired()])
+    price_description = TextAreaField('Price Description')
+    file = FileField('Upload File', validators=[
+        FileAllowed(['pdf', 'png', 'jpg', 'jpeg', 'heic'], 'Only PDF, PNG, JPEG, and HEIC files allowed!')
+    ])
     submit = SubmitField('Generate Price List')
 
 # Load price list
@@ -313,24 +316,32 @@ def price_list():
 
 @app.route('/generate-price-list', methods=['POST'])
 def generate_price_list_route():
-    app.logger.debug(f"Form Data: {request.form}")
-    app.logger.debug(f"Headers: {dict(request.headers)}")
-    app.logger.debug(f"CSRF Token from form: {request.form.get('csrf_token')}")
-    app.logger.debug(f"CSRF Token from session: {session.get('csrf_token')}")
-
     form = PriceListForm()
-    app.logger.debug(f"Form errors: {form.errors}")
-    app.logger.debug(f"Form validated: {form.validate()}")
-
     if form.validate_on_submit():
         try:
             app.logger.info("Form validation successful")
-            items = generate_price_list(form.price_description.data)
-            app.logger.info(f"Generated Items: {items}")  
-
+            price_data = ""
+            
+            if form.file.data:
+                file = form.file.data
+                # Save file temporarily
+                temp_path = f"temp_{file.filename}"
+                file.save(temp_path)
+                try:
+                    items = generate_price_list_from_image(temp_path)
+                finally:
+                    # Clean up temporary file
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+            elif form.price_description.data:
+                items = generate_price_list(form.price_description.data)
+            else:
+                flash('Please provide either a file or price description.', 'error')
+                return redirect(url_for('price_list'))
+                
+            app.logger.info(f"Generated Items: {items}")
             save_price_list(items)
             app.logger.info("Price list saved successfully")
-
             flash('Price list updated successfully!', 'success')
             return redirect(url_for('price_list'))
         except Exception as e:
@@ -338,7 +349,7 @@ def generate_price_list_route():
             flash('Error generating price list. Please try again.', 'error')
     else:
         app.logger.error(f"Form validation failed. Errors: {form.errors}")
-        flash('Invalid CSRF token or form submission.', 'error')
+        flash('Invalid form submission.', 'error')
 
     return redirect(url_for('price_list'))
 

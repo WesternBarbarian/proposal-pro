@@ -93,6 +93,19 @@ def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
     return customer, project
 
 
+def generate_price_list_from_image(file_path: str) -> Items:
+    img_file = client.files.upload(file=file_path, config={'display_name': 'price_list'})
+    
+    prompt = "Extract structured price list data from the following file"
+    response = client.models.generate_content(
+        model=model,
+        contents=[prompt, img_file],
+        config={'response_mime_type': 'application/json', 'response_schema': Items}
+    )
+    
+    price_list: Items = response.parsed
+    return price_list
+
 def generate_price_list(description: str) -> Items:
   prompt = f"Extract the structured data from the following: {description}"
 

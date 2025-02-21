@@ -81,23 +81,34 @@
             <h4>Generate New Price List</h4>
         </div>
         <div class="card-body">
-                    <form method="POST" action="{{ url_for('generate_price_list_route') }}">
+                    <form method="POST" action="{{ url_for('generate_price_list_route') }}" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
                         <div class="mb-3">
-                    {{ form.price_description.label(class="form-label") }}
-                    <p class="text-muted">Enter a description of items and their prices. For example: "Drywall costs $2.50 per square foot, painting is $3.00 per square foot..."</p>
-                    {{ form.price_description(class="form-control", rows=5) }}
-                    {% if form.price_description.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.price_description.errors %}
-                        {{ error }}
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-                <button type="button" class="btn btn-primary" onclick="showWarningModal()">Generate Price List</button>
-            </form>
+                            {{ form.price_description.label(class="form-label") }}
+                            <p class="text-muted">Enter a description of items and their prices. For example: "Drywall costs $2.50 per square foot, painting is $3.00 per square foot..."</p>
+                            {{ form.price_description(class="form-control", rows=5) }}
+                            {% if form.price_description.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.price_description.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.file.label(class="form-label") }}
+                            {{ form.file(class="form-control") }}
+                            {% if form.file.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.file.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="showWarningModal()">Generate Price List</button>
+                    </form>
         </div>
     </div>
         
