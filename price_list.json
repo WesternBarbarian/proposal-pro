@@ -1,14 +1,78 @@
 {
-    "Data inventory": {
-        "unit": "project",
-        "price": 500
-    },
-    "Jam session": {
-        "unit": "session",
-        "price": 300
-    },
-    "Project work": {
+    "General Labor": {
         "unit": "hour",
+        "price": 45
+    },
+    "Drywall": {
+        "unit": "square foot",
+        "price": 2
+    },
+    "Painting": {
+        "unit": "square foot",
+        "price": 1
+    },
+    "Flooring Installation": {
+        "unit": "square foot",
+        "price": 3
+    },
+    "Tile Installation": {
+        "unit": "square foot",
+        "price": 5
+    },
+    "Carpentry": {
+        "unit": "hour",
+        "price": 50
+    },
+    "Plumbing Repairs": {
+        "unit": "hour",
+        "price": 75
+    },
+    "Electrical Work": {
+        "unit": "hour",
+        "price": 80
+    },
+    "Roofing": {
+        "unit": "square foot",
+        "price": 6
+    },
+    "Window Installation": {
+        "unit": "window",
+        "price": 250
+    },
+    "Door Installation": {
+        "unit": "door",
+        "price": 200
+    },
+    "HVAC Maintenance": {
+        "unit": "visit",
+        "price": 100
+    },
+    "Deck Building": {
+        "unit": "square foot",
+        "price": 35
+    },
+    "Fence Installation": {
+        "unit": "linear foot",
+        "price": 20
+    },
+    "Gutter Cleaning": {
+        "unit": "linear foot",
+        "price": 1
+    },
+    "Power Washing": {
+        "unit": "square foot",
+        "price": 0
+    },
+    "Basement Waterproofing": {
+        "unit": "square foot",
+        "price": 5
+    },
+    "Home Insulation": {
+        "unit": "square foot",
+        "price": 2
+    },
+    "Junk Removal": {
+        "unit": "truckload",
         "price": 100
     }
 }
