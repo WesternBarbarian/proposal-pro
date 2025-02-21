@@ -22,7 +22,7 @@ class Requests(BaseModel):
 class Item(BaseModel):
   item: str = Field(description="The name of the item, if unclear are not available, please return 'unknown'")
   unit: str = Field(description="The unit of the item, if unclear are not available, please return 'unknown'")
-  price: int = Field(description="The price of the item, if unclear or not available, please return zero")
+  price: float = Field(description="The price of the item, if unclear or not available, please return 0.0")
 
 
 class Items(BaseModel):
@@ -48,7 +48,7 @@ def extract_project_data(description: str) -> tuple[dict, dict]:
         config={'response_mime_type': 'application/json', 'response_schema': ProjectData})
 
     project_data: ProjectData = response.parsed
-    
+
     # Convert to separate customer and project dictionaries for backward compatibility
     customer = {
         "name": project_data.customer_name,
@@ -57,17 +57,17 @@ def extract_project_data(description: str) -> tuple[dict, dict]:
         "address": project_data.customer_address,
         "project_address": project_data.project_address
     }
-    
+
     project = {
         "notes": project_data.notes,
         "details": [{"item": detail.item, "quantity": detail.quantity} for detail in project_data.details]
     }
-    
+
     return customer, project
 
 def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
     img_file = client.files.upload(file=file_path, config={'display_name': 'project_details'})
-    
+
     prompt = "Extract the structured data from the following file"
     response = client.models.generate_content(
         model=model,
@@ -75,7 +75,7 @@ def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
         config={'response_mime_type': 'application/json', 'response_schema': ProjectData}
     )
     project_data: ProjectData = response.parsed
-    
+
     # Convert to separate customer and project dictionaries for backward compatibility
     customer = {
         "name": project_data.customer_name,
@@ -84,25 +84,25 @@ def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
         "address": project_data.customer_address,
         "project_address": project_data.project_address
     }
-    
+
     project = {
         "notes": project_data.notes,
         "details": [{"item": detail.item, "quantity": detail.quantity} for detail in project_data.details]
     }
-    
+
     return customer, project
 
 
 def generate_price_list_from_image(file_path: str) -> Items:
     img_file = client.files.upload(file=file_path, config={'display_name': 'price_list'})
-    
+
     prompt = "Extract structured price list data from the following file"
     response = client.models.generate_content(
         model=model,
         contents=[prompt, img_file],
         config={'response_mime_type': 'application/json', 'response_schema': Items}
     )
-    
+
     price_list: Items = response.parsed
     return price_list
 
@@ -132,12 +132,12 @@ def analyze_project(description: str) -> dict:
       config={'response_mime_type': 'application/json', 'response_schema': Requests})
 
   user_request: Requests = response.parsed
-  
+
   return user_request
 
 def analyze_project_image(file_path: str) -> dict:
   img_file = client.files.upload(file=file_path, config={'display_name': 'project_details'})
-  
+
   prompt = "Extract the structured data from the following file"
   response = client.models.generate_content(
       model=model,
@@ -151,22 +151,22 @@ def analyze_project_image(file_path: str) -> dict:
 class Line_Item(BaseModel):
   name: str = Field(description="The name of the item, if unclear or not available, please return 'unknown'")
   unit: str = Field(description="The unit of the item, if unclear or not available, please return 'unknown'")
-  price: int = Field(description="The price of the item, if unclear or not available, please return zero")
+  price: float = Field(description="The price of the item, if unclear or not available, please return 0.0")
   quantity: int = Field(description="The quantity of the item, if unclear or not available, please return zero")
 
   @computed_field
-  def total(self) -> int:
+  def total(self) -> float:
     return self.price * self.quantity
 
 class Line_Items(BaseModel):
   lines: list[Line_Item] = Field(description="The list of line items with the item name, price, and quantity.")
 
   @computed_field
-  def sub_total(self) -> int:
+  def sub_total(self) -> float:
       """Calculates the sum of all line item totals."""
       return sum(line.total for line in self.lines)
-   
-    
+
+
 def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
     sys_instruct="""##Role: You are a pricing specialist.
     You look up the price of items from the provided list.
@@ -295,9 +295,9 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
         ),
     )
 
-    
+
     line_items: Line_Items = response.parsed
-   
+
     return line_items
 
 
