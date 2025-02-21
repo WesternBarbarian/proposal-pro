@@ -1,14 +1,14 @@
 {
-    "Drywall": {
-        "unit": "square feet",
-        "price": 4.0
+    "Data inventory": {
+        "unit": "project",
+        "price": 500
     },
-    "labor": {
+    "Jam session": {
+        "unit": "session",
+        "price": 300
+    },
+    "Project work": {
         "unit": "hour",
-        "price": 45.0
-    },
-    "paint": {
-        "unit": "gallon",
-        "price": 13.5
+        "price": 100
     }
 }
