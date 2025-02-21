@@ -13,7 +13,16 @@ import markdown2
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
-from ai_helper import  extract_project_data, extract_project_data_from_image, generate_proposal, generate_price_list, lookup_prices, Line_Items, Line_Item
+from ai_helper import (
+    extract_project_data, 
+    extract_project_data_from_image, 
+    generate_proposal, 
+    generate_price_list,
+    generate_price_list_from_image,
+    lookup_prices, 
+    Line_Items, 
+    Line_Item
+)
 
 # Configure logging
 logging.basicConfig(
