@@ -95,6 +95,31 @@ def is_user_allowed(email):
     return (email in ALLOWED_USERS or 
             any(email.endswith('@' + domain) for domain in ALLOWED_DOMAINS))
 
+def require_auth(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        credentials = session.get('credentials')
+        if not credentials:
+            return redirect(url_for('login'))
+        try:
+            response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
+                headers={'Authorization': f'Bearer {credentials["token"]}'})
+            if response.status_code == 401:
+                session.clear()
+                return redirect(url_for('login'))
+            user_info = response.json()
+            email = user_info.get('email')
+            if not email or not is_user_allowed(email):
+                session.clear()
+                return "Access Denied", 403
+        except Exception as e:
+            app.logger.error(f"Auth error: {str(e)}")
+            session.clear()
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
+
 @app.route('/')
 def index():
     app.logger.info("Home route was accessed")
@@ -149,6 +174,7 @@ def logout():
 
 
 @app.route('/estimate', methods=['GET', 'POST'])
+@require_auth
 def estimate():
     form = ProjectForm()
     if form.validate_on_submit():
