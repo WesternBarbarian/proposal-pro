@@ -6,5 +6,9 @@
     "labor": {
         "unit": "hour",
         "price": 45.0
+    },
+    "paint": {
+        "unit": "gallon",
+        "price": 13.5
     }
 }
