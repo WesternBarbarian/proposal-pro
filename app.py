@@ -470,9 +470,11 @@ def update_price():
 
         # Save updated price list
         save_price_list(price_list)
-
         flash('Price updated successfully!', 'success')
-
+    except Exception as e:
+        logging.error(f"Error updating price: {str(e)}")
+        flash('Error updating price. Please try again.', 'error')
+    return redirect(url_for('price_list'))
 
 @app.route('/proposal-templates', methods=['GET'])
 @require_auth
@@ -495,10 +497,6 @@ def delete_template_route():
     success, message = delete_template(template_id)
     flash(message, 'success' if success else 'error')
     return redirect(url_for('proposal_templates'))
-
-    except Exception as e:
-        logging.error(f"Error updating price: {str(e)}")
-        flash('Error updating price. Please try again.', 'error')
 
     return redirect(url_for('price_list'))
 
