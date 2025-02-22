@@ -42,7 +42,7 @@
             <h4>Add New Template</h4>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ url_for('add_template') }}">
+            <form method="POST" action="{{ url_for('add_template_route') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="mb-3">
                     <label class="form-label">Template Text</label>
