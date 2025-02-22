@@ -47,7 +47,7 @@
                 <div class="mb-3">
                     <label class="form-label">Template Text</label>
                     <textarea class="form-control" name="template" rows="10" required></textarea>
-                    <small class="text-muted">Enter your proposal template. You can use placeholders like {customer_name}, {project_details}, {total_cost}, etc.</small>
+                    <small class="text-muted">Enter example proposals.  These should demonstrate the length, tone, and contents that you would like the AI to follow when drafting your proposal.</small>
                 </div>
                 <button type="submit" class="btn btn-success" {% if templates|length >= 5 %}disabled{% endif %}>
                     Add Template

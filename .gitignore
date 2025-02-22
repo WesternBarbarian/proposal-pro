@@ -33,6 +33,9 @@ flask_session/
 
 # Project specific
 price_list.json
+default_template.json
+custom_templates.json
+
 
 # Editor directories and files
 .idea
