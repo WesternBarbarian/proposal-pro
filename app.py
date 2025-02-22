@@ -23,6 +23,7 @@ from ai_helper import (
     Line_Items, 
     Line_Item
 )
+from template_manager import load_templates, add_template, delete_template
 
 # Configure logging
 logging.basicConfig(
@@ -471,6 +472,30 @@ def update_price():
         save_price_list(price_list)
 
         flash('Price updated successfully!', 'success')
+
+
+@app.route('/proposal-templates', methods=['GET'])
+@require_auth
+def proposal_templates():
+    templates = load_templates()
+    return render_template('proposal_templates.html', templates=templates)
+
+@app.route('/add-template', methods=['POST'])
+@require_auth
+def add_template_route():
+    template_text = request.form.get('template')
+    success, message = add_template(template_text)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('proposal_templates'))
+
+@app.route('/delete-template', methods=['POST'])
+@require_auth
+def delete_template_route():
+    template_id = int(request.form.get('template_id'))
+    success, message = delete_template(template_id)
+    flash(message, 'success' if success else 'error')
+    return redirect(url_for('proposal_templates'))
+
     except Exception as e:
         logging.error(f"Error updating price: {str(e)}")
         flash('Error updating price. Please try again.', 'error')

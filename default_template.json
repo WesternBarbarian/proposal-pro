@@ -1,0 +1,6 @@
+
+{
+    "templates": [
+        "Dear {customer_name},\n\nThank you for considering us for your project. Based on the details provided, here is our proposal:\n\nProject Overview:\n{project_details}\n\nTotal Cost: ${total_cost}\n\nWe aim to complete this project within 2-3 weeks from the start date. Please let us know if you have any questions.\n\nBest regards,\nYour Company Name"
+    ]
+}

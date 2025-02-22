@@ -1,0 +1,62 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Proposal Templates Management</h2>
+
+    <!-- Current Templates -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Current Templates</h4>
+        </div>
+        <div class="card-body">
+            {% if templates %}
+            <div class="list-group">
+                {% for template in templates %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>Template {{ loop.index }}</h5>
+                        <form method="POST" action="{{ url_for('delete_template') }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="template_id" value="{{ loop.index - 1 }}">
+                            <button type="submit" class="btn btn-sm btn-danger" 
+                                    onclick="return confirm('Are you sure you want to delete this template?')">
+                                Delete
+                            </button>
+                        </form>
+                    </div>
+                    <pre class="mt-2">{{ template }}</pre>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>No custom templates found. Using default template.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Add New Template -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Add New Template</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('add_template') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="mb-3">
+                    <label class="form-label">Template Text</label>
+                    <textarea class="form-control" name="template" rows="10" required></textarea>
+                    <small class="text-muted">Enter your proposal template. You can use placeholders like {customer_name}, {project_details}, {total_cost}, etc.</small>
+                </div>
+                <button type="submit" class="btn btn-success" {% if templates|length >= 5 %}disabled{% endif %}>
+                    Add Template
+                </button>
+                {% if templates|length >= 5 %}
+                <small class="text-danger">Maximum 5 templates allowed</small>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
