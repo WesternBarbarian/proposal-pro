@@ -304,6 +304,10 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
 
 #Generate proposal
 def generate_proposal(project_details: dict, customer: dict, line_items: Line_Items) -> str:
+    # Load templates from custom or default file
+    templates = load_templates()
+    template_examples = "\n\n".join(templates)
+    
     prompt = f""""
     You are an estimator writing a new proposal for a client. Please proceed
     step-by-step:
@@ -311,7 +315,9 @@ def generate_proposal(project_details: dict, customer: dict, line_items: Line_It
     1. Please write the project analysis based on these notes:
     {project_details} and this estimate: {line_items}. It is OK if
     some amounts are zero.
-    2. Based on the analysis above write a one-paragraph estimate to {customer['name']}. Do not make up any details. Use only the information from the source files and analysis above.  Use the following examples to determine, the voice, tone, and length of the proposal: {INSERT TEMPLATES HERE}
+    2. Based on the analysis above write a one-paragraph estimate to {customer['name']}. Do not make up any details. Use only the information from the source files and analysis above. Use the following examples to determine the voice, tone, and length of the proposal:
+
+    {template_examples}
     """
 
 
