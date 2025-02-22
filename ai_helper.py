@@ -4,6 +4,7 @@ import os
 import json
 from pydantic import BaseModel, Field, computed_field
 from typing import List
+from template_manager import load_templates
 
 # Configure Gemini AI
 api_key= os.environ['GEMINI_API_KEY']
