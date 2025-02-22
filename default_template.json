@@ -1,8 +1,6 @@
 
 {
     "templates": [
-        "Yo Yo,
-        
-        We did look and we see you need some stuff. We hook you up yo. Here's the deets: [project details]."
+        "Dear [Customer],\n\nBased on our review of your project requirements, we are pleased to provide this estimate. Our assessment includes [project details]."
     ]
 }
