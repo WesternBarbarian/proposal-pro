@@ -17,6 +17,7 @@
                 <div class="list-group-item">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5>Template {{ loop.index }}</h5>
+                        {% if using_custom %}
                         <form method="POST" action="{{ url_for('delete_template_route') }}" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="template_id" value="{{ loop.index - 1 }}">
@@ -25,13 +26,17 @@
                                 Delete
                             </button>
                         </form>
+                        {% endif %}
                     </div>
                     <pre class="mt-2">{{ template }}</pre>
+                    {% if not using_custom %}
+                    <small class="text-muted">Using default template. Add custom templates to enable editing.</small>
+                    {% endif %}
                 </div>
                 {% endfor %}
             </div>
             {% else %}
-            <p>No custom templates found. Using default template.</p>
+            <p>No templates found.</p>
             {% endif %}
         </div>
     </div>

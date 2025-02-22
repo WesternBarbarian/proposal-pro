@@ -6,15 +6,18 @@ def load_templates():
     # Try to load custom templates first
     try:
         with open('custom_templates.json', 'r') as f:
-            return json.load(f)['templates']
+            templates = json.load(f)['templates']
+            if templates and len(templates) > 0:
+                return templates, True
     except (FileNotFoundError, json.JSONDecodeError, KeyError):
-        # If custom templates fail, load default template
-        try:
-            with open('default_template.json', 'r') as f:
-                return json.load(f)['templates']
-        except (FileNotFoundError, json.JSONDecodeError, KeyError):
-            # Return a basic default if both files fail
-            return ["Default template not found. Please add a template."]
+        pass
+        
+    # If custom templates fail or are empty, load default template
+    try:
+        with open('default_template.json', 'r') as f:
+            return json.load(f)['templates'], False
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        return ["Default template not found. Please add a template."], False
 
 def save_templates(templates):
     with open('custom_templates.json', 'w') as f:

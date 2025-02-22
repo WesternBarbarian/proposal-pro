@@ -479,8 +479,8 @@ def update_price():
 @app.route('/proposal-templates', methods=['GET'])
 @require_auth
 def proposal_templates():
-    templates = load_templates()
-    return render_template('proposal_templates.html', templates=templates)
+    templates, using_custom = load_templates()
+    return render_template('proposal_templates.html', templates=templates, using_custom=using_custom)
 
 @app.route('/add-template', methods=['POST'])
 @require_auth
