@@ -1,17 +1,8 @@
 
 {
     "templates": [
-        "Dear [Homeowner’s Name],
-
-        Thank you for the opportunity to assess your home improvement needs at [Project Address]. Based on our site visit and discussions, we propose to complete the following work: [Briefly summarize the project scope, e.g., “kitchen renovation, bathroom remodel, siding replacement”]. Our team at [Company Name] is committed to delivering high-quality craftsmanship while adhering to industry best practices, ensuring durability, efficiency, and an aesthetically pleasing result. We will use premium materials that align with your budget and design preferences, following local building codes and manufacturer specifications to ensure compliance and longevity.
-
-        Our approach includes thorough preparation, professional installation, and a clean, efficient work environment. Prior to starting, we will secure necessary permits and conduct a pre-construction walkthrough to confirm details. Throughout the project, our licensed professionals will follow best practices, including moisture management in wet areas, proper structural reinforcements, and energy-efficient installations where applicable. We will also implement a daily site cleanup routine and maintain open communication to keep you informed of progress and any unforeseen adjustments. Upon completion, a final walkthrough will be conducted to ensure your satisfaction, and we will provide any applicable warranties and maintenance recommendations.
-
-        The estimated project timeline is approximately [timeframe], with work scheduled to begin on [start date]. The total project cost is estimated at [$XX,XXX], inclusive of labor, materials, and any required permits. A formal contract outlining the scope of work, payment schedule, and terms will be provided for review. Please feel free to reach out with any questions or modifications you’d like to discuss. We look forward to enhancing your home with expert craftsmanship and professionalism.
-
-        Sincerely,
-        [Your Name]
-        [Your Company Name]
-        [Your Contact Information]"
+        "Yo Yo,
+        
+        We did look and we see you need some stuff. We hook you up yo. Here's the deets: [project details]."
     ]
 }
