@@ -25,7 +25,7 @@ def save_templates(templates):
 
 def add_template(template_text):
     try:
-        templates = load_templates()
+        templates, _ = load_templates()
         if len(templates) >= 5:
             return False, "Maximum 5 templates allowed"
         templates.append(template_text)
@@ -36,7 +36,7 @@ def add_template(template_text):
 
 def delete_template(template_id):
     try:
-        templates = load_templates()
+        templates, _ = load_templates()
         if 0 <= template_id < len(templates):
             templates.pop(template_id)
             save_templates(templates)
