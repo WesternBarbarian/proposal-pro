@@ -133,7 +133,7 @@ def index():
                 # Token expired or invalid
                 session.clear()
                 return render_template('index.html', authenticated=False)
-                
+
             user_info = response.json()
             email = user_info.get('email')
             if email and is_user_allowed(email):
@@ -182,7 +182,7 @@ def estimate():
         try:
             file_info = "No file uploaded"
             project_data = ""
-            
+
             if form.file.data:
                 file = form.file.data
                 file_info = f"File upload: {file.filename}"
@@ -203,14 +203,14 @@ def estimate():
                 customer, project_details = extract_project_data(project_data)
             app.logger.debug(f"Project details returned from analyze_project: {project_details}")
             price_list = load_price_list()
-            
+
             # Track form data in Google Sheet if user is authenticated
             if 'credentials' in session:
                 try:
                     folder_id = create_folder_if_not_exists('proposal-pro')
                     # Get line items with prices
                     line_items = lookup_prices(project_details, price_list)
-                    
+
                     if folder_id:
                         sheet_id = create_tracking_sheet_if_not_exists(folder_id)
                         if sheet_id:
@@ -227,7 +227,7 @@ def estimate():
             # Convert Line_Items to dictionary for JSON serialization
             line_items_dict = line_items.dict()
 
-            
+
             return render_template('estimate.html',
                                     project_details=project_details,
                                     total_cost=total_cost,
@@ -236,7 +236,7 @@ def estimate():
         except Exception as e:
             error_msg = str(e)
             logging.error(f"Error processing estimate: {error_msg}")
-            
+
             if "429 RESOURCE_EXHAUSTED" in error_msg:
                 flash('The AI service is currently at capacity. Please wait a few minutes and try again.', 'error')
             elif "Request payload size exceeds the limit" in error_msg:
@@ -259,7 +259,13 @@ def create_proposal():
             Line_Item(**item) for item in line_items_data['lines']
         ])
 
-        proposal = generate_proposal(project_details, customer_data, line_items)
+        templates, _ = load_templates()
+        if isinstance(templates, list):
+            templates = [str(t) for t in templates]
+        else:
+            templates = [str(templates)]
+
+        proposal = generate_proposal(project_details, customer_data, line_items, templates)
         app.logger.debug(f"Customer Data: {customer_data}")
         return render_template('proposal.html', 
                             proposal=proposal,
@@ -287,19 +293,19 @@ def save_proposal():
 def save_to_drive():
     if 'credentials' not in session:
         return redirect(url_for('login'))
-        
+
     try:
         content = request.form.get('proposal_content')
-        
-        
+
+
         folder_id = create_folder_if_not_exists('proposal-pro')
-        
+
         if not folder_id:
             flash('Please log in to save to Google Drive.', 'error')
             return redirect(url_for('login'))
-            
+
         content = request.form.get('proposal_content')
-        
+
         # Update the last row of tracking sheet with proposal content
         try:
             sheet_id = create_tracking_sheet_if_not_exists(folder_id)
@@ -324,7 +330,7 @@ def save_to_drive():
 
         # Get customer name from form
         safe_name = request.form.get('customer_name', 'Unknown Customer')
-        
+
         doc_id = create_doc_in_folder(
             f"Proposal - {safe_name} - {datetime.now().strftime('%Y-%m-%d')}",
             content,
@@ -332,7 +338,7 @@ def save_to_drive():
         )
 
         app.logger.info(f"Created document for customer: {safe_name}")
-        
+
         flash('Proposal saved to Google Drive successfully!', 'success')
         return redirect(url_for('estimate'))
     except Exception as e:
@@ -357,7 +363,7 @@ def generate_price_list_route():
         try:
             app.logger.info("Form validation successful")
             price_data = ""
-            
+
             if form.file.data:
                 file = form.file.data
                 # Save file temporarily
@@ -374,7 +380,7 @@ def generate_price_list_route():
             else:
                 flash('Please provide either a file or price description.', 'error')
                 return redirect(url_for('price_list'))
-                
+
             app.logger.info(f"Generated Items: {items}")
             save_price_list(items)
             app.logger.info("Price list saved successfully")
