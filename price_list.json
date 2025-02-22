@@ -1,78 +1,82 @@
 {
     "General Labor": {
         "unit": "hour",
-        "price": 45
+        "price": 45.0
     },
     "Drywall": {
         "unit": "square foot",
-        "price": 2
+        "price": 2.5
     },
     "Painting": {
         "unit": "square foot",
-        "price": 1
+        "price": 1.75
+    },
+    "Paint brush": {
+        "unit": "brush",
+        "price": 3.0
     },
     "Flooring Installation": {
         "unit": "square foot",
-        "price": 3
+        "price": 3.0
     },
     "Tile Installation": {
         "unit": "square foot",
-        "price": 5
+        "price": 5.0
     },
     "Carpentry": {
         "unit": "hour",
-        "price": 50
+        "price": 50.0
     },
     "Plumbing Repairs": {
         "unit": "hour",
-        "price": 75
+        "price": 75.0
     },
     "Electrical Work": {
         "unit": "hour",
-        "price": 80
+        "price": 80.0
     },
     "Roofing": {
         "unit": "square foot",
-        "price": 6
+        "price": 6.5
     },
     "Window Installation": {
         "unit": "window",
-        "price": 250
+        "price": 250.0
     },
     "Door Installation": {
         "unit": "door",
-        "price": 200
+        "price": 200.0
     },
     "HVAC Maintenance": {
         "unit": "visit",
-        "price": 100
+        "price": 100.0
     },
     "Deck Building": {
         "unit": "square foot",
-        "price": 35
+        "price": 35.0
     },
     "Fence Installation": {
         "unit": "linear foot",
-        "price": 20
+        "price": 20.0
     },
     "Gutter Cleaning": {
         "unit": "linear foot",
-        "price": 1
+        "price": 1.5
     },
     "Power Washing": {
         "unit": "square foot",
-        "price": 0
+        "price": 0.75
     },
     "Basement Waterproofing": {
         "unit": "square foot",
-        "price": 5
+        "price": 5.5
     },
     "Home Insulation": {
         "unit": "square foot",
-        "price": 2
+        "price": 2.75
     },
     "Junk Removal": {
         "unit": "truckload",
-        "price": 100
+        "price": 100.0
     }
 }
