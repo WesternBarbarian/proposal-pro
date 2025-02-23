@@ -304,9 +304,7 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
 
 
 #Generate proposal
-def generate_proposal(project_details: dict, customer: dict, line_items: Line_Items) -> str:
-    # Load templates from custom or default file
-    templates = load_templates()
+def generate_proposal(project_details: dict, customer: dict, line_items: Line_Items, templates: list) -> str:
     template_examples = "\n\n".join(templates)
     
     prompt = f""""
