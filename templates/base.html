@@ -29,10 +29,10 @@
                     </li>
                 </ul>
                 <div class="navbar-nav">
-                    {% if not authenticated %}
-                        <a href="{{ url_for('login') }}" class="btn btn-primary">Login with Google</a>
-                    {% else %}
+                    {% if authenticated %}
                         <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+                    {% else %}
+                        <a href="{{ url_for('login') }}" class="btn btn-primary">Login with Google</a>
                     {% endif %}
                 </div>
             </div>

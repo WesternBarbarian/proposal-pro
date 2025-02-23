@@ -486,7 +486,13 @@ def update_price():
 @require_auth
 def proposal_templates():
     templates, using_custom = load_templates()
-    return render_template('proposal_templates.html', templates=templates, using_custom=using_custom)
+    response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
+        headers={'Authorization': f'Bearer {session["credentials"]["token"]}'})
+    authenticated = response.status_code == 200
+    return render_template('proposal_templates.html', 
+                         templates=templates, 
+                         using_custom=using_custom,
+                         authenticated=authenticated)
 
 @app.route('/add-template', methods=['POST'])
 @require_auth
