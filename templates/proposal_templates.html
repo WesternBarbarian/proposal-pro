@@ -3,12 +3,12 @@
 
 {% block content %}
 <div class="container">
-    <h2 class="mb-4">Proposal Templates Management</h2>
+    <h2 class="mb-4">Proposal Example Management</h2>
 
     <!-- Current Templates -->
     <div class="card mb-4">
         <div class="card-header">
-            <h4>Current Templates</h4>
+            <h4>Current Examples</h4>
         </div>
         <div class="card-body">
             {% if templates and templates|length > 0 %}
@@ -17,7 +17,7 @@
                 {% if template is string %}
                 <div class="list-group-item">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h5>Template {{ loop.index }}</h5>
+                        <h5>Example {{ loop.index }}</h5>
                         {% if using_custom %}
                         <form method="POST" action="{{ url_for('delete_template_route') }}" class="d-inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -31,14 +31,14 @@
                     </div>
                     <div class="template-content mt-2">{{ template }}</div>
                     {% if not using_custom %}
-                    <small class="text-muted">Using default template. Add custom templates to enable editing.</small>
+                    <small class="text-muted">Using default example. Add custom examples to enable editing.</small>
                     {% endif %}
                 </div>
                 {% endif %}
                 {% endfor %}
             </div>
             {% else %}
-            <p>No templates found.</p>
+            <p>No examples found.</p>
             {% endif %}
         </div>
     </div>
@@ -46,21 +46,21 @@
     <!-- Add New Template -->
     <div class="card mb-4">
         <div class="card-header">
-            <h4>Add New Template</h4>
+            <h4>Add New Example</h4>
         </div>
         <div class="card-body">
             <form method="POST" action="{{ url_for('add_template_route') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="mb-3">
-                    <label class="form-label">Template Text</label>
+                    <label class="form-label">Example Text</label>
                     <textarea class="form-control" name="template" rows="10" required></textarea>
                     <small class="text-muted">Enter example proposals.  These should demonstrate the length, tone, and contents that you would like the AI to follow when drafting your proposal.</small>
                 </div>
                 <button type="submit" class="btn btn-success" {% if templates|length >= 5 %}disabled{% endif %}>
-                    Add Template
+                    Add Example
                 </button>
                 {% if templates|length >= 5 %}
-                <small class="text-danger">Maximum 5 templates allowed</small>
+                <small class="text-danger">Maximum 5 examples allowed</small>
                 {% endif %}
             </form>
         </div>
