@@ -233,7 +233,8 @@ def estimate():
                                     project_details=project_details,
                                     total_cost=total_cost,
                                     customer=customer,
-                                    line_items=line_items_dict)
+                                    line_items=line_items_dict,
+                                    authenticated=True)
         except Exception as e:
             error_msg = str(e)
             logging.error(f"Error processing estimate: {error_msg}")
@@ -246,7 +247,7 @@ def estimate():
                 flash('Error processing your request. Please try again.', 'error')
             return redirect(url_for('estimate'))
 
-    return render_template('estimate.html', form=form)
+    return render_template('estimate.html', form=form, authenticated=True)
 
 @app.route('/generate_proposal', methods=['POST'])
 def create_proposal():
@@ -271,7 +272,8 @@ def create_proposal():
         return render_template('proposal.html', 
                             proposal=proposal,
                             raw_proposal=proposal,  # For markdown editing
-                            customer=customer_data)
+                            customer=customer_data,
+                            authenticated=True)
     except Exception as e:
         logging.error(f"Error generating proposal: {str(e)}")
         flash('Error generating proposal. Please try again.', 'error')
@@ -354,7 +356,8 @@ def price_list():
     current_prices = load_price_list()
     return render_template('price_list.html', 
                           form=form, 
-                          current_prices=current_prices)
+                          current_prices=current_prices,
+                          authenticated=True)
 
 
 
