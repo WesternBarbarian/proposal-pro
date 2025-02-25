@@ -67,10 +67,6 @@
         "unit": "square foot",
         "price": 0.75
     },
-    "Basement Waterproofing": {
-        "unit": "square foot",
-        "price": 5.5
-    },
     "Home Insulation": {
         "unit": "square foot",
         "price": 2.75
