@@ -102,25 +102,22 @@ def require_auth(f):
     def decorated(*args, **kwargs):
         credentials = session.get('credentials')
         if not credentials:
-            flash('Please login to access this feature', 'warning')
             return redirect(url_for('login'))
         try:
             response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
                 headers={'Authorization': f'Bearer {credentials["token"]}'})
             if response.status_code == 401:
                 session.clear()
-                flash('Session expired, please login again', 'warning')
                 return redirect(url_for('login'))
             user_info = response.json()
             email = user_info.get('email')
             if not email or not is_user_allowed(email):
                 session.clear()
-                flash('Access denied. You are not authorized to access this feature', 'error')
+                flash('Access denied. You are not authorized.', 'error')
                 return redirect(url_for('index'))
         except Exception as e:
             app.logger.error(f"Auth error: {str(e)}")
             session.clear()
-            flash('Authentication error occurred', 'error')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated
