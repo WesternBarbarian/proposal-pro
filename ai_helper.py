@@ -121,9 +121,6 @@ def generate_price_list(description: str) -> Items:
   return price_list
 
 
-
-
-
 def analyze_project(description: str) -> dict:
   prompt = f"Extract the structured data from {description}"
 
