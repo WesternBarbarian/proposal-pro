@@ -67,12 +67,8 @@
         "unit": "square foot",
         "price": 0.75
     },
-    "Home Insulation": {
-        "unit": "square foot",
-        "price": 2.75
-    },
     "Junk Removal": {
         "unit": "truckload",
-        "price": 100.0
+        "price": 200.0
     }
 }
