@@ -302,9 +302,15 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
 
 #Generate proposal
 def generate_proposal(project_details: dict, customer: dict, line_items: Line_Items, templates: list) -> str:
-    template_examples = "\n\n".join(templates)
+    # Ensure templates are all strings and join them with clear separators
+    if not templates or len(templates) == 0:
+        # Fallback to load templates if none provided
+        templates, _ = load_templates()
+
+    # Convert all templates to strings and join them
+    template_examples = "\n\n---EXAMPLE---\n\n".join([str(t) for t in templates])
     
-    prompt = f""""
+    prompt = f"""
     You are an estimator writing a new proposal for a client. Please proceed
     step-by-step:
 
