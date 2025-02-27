@@ -306,9 +306,19 @@ def generate_proposal(project_details: dict, customer: dict, line_items: Line_It
     if not templates or len(templates) == 0:
         # Fallback to load templates if none provided
         templates, _ = load_templates()
-
-    # Convert all templates to strings and join them
-    template_examples = "\n\n---EXAMPLE---\n\n".join([str(t) for t in templates])
+    
+    # Debug log to check what templates we're receiving
+    print(f"DEBUG - Templates loaded: {templates}")
+    
+    # Process templates to ensure proper newlines and formatting
+    processed_templates = []
+    for t in templates:
+        # Convert to string and properly handle newlines
+        template_str = str(t).replace('\\r\\n', '\n').replace('\\n', '\n')
+        processed_templates.append(template_str)
+    
+    # Join with clear separators
+    template_examples = "\n\n=== EXAMPLE PROPOSAL ===\n\n".join(processed_templates)
     
     prompt = f"""
     You are an estimator writing a new proposal for a client. Please proceed
@@ -323,6 +333,9 @@ def generate_proposal(project_details: dict, customer: dict, line_items: Line_It
     """
 
 
+    # Debug print template_examples to verify format
+    print(f"DEBUG - Template examples being sent to AI: {template_examples}")
+    
     response = client.models.generate_content(
         model=model,
         contents=prompt,

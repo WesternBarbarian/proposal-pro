@@ -8,7 +8,8 @@ def load_templates():
         with open('custom_templates.json', 'r') as f:
             templates = json.load(f)['templates']
             if isinstance(templates, list) and len(templates) > 0:
-                return [str(t) for t in templates], True
+                # Process templates to ensure proper newlines
+                return [t.replace('\\r\\n', '\n').replace('\\n', '\n') for t in templates], True
     except (FileNotFoundError, json.JSONDecodeError, KeyError):
         pass
         
@@ -17,8 +18,9 @@ def load_templates():
         with open('default_template.json', 'r') as f:
             templates = json.load(f)['templates']
             if isinstance(templates, list):
-                return [str(t) for t in templates], False
-            return [str(templates)], False
+                # Process templates to ensure proper newlines
+                return [t.replace('\\r\\n', '\n').replace('\\n', '\n') for t in templates], False
+            return [str(templates).replace('\\r\\n', '\n').replace('\\n', '\n')], False
     except (FileNotFoundError, json.JSONDecodeError, KeyError):
         return ["Default template not found. Please add a template."], False
 
