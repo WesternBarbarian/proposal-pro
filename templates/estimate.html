@@ -1,10 +1,11 @@
+
 {% extends 'base.html' %}
 
 {% block content %}
 <div class="estimate-form">
     <h2>Project Estimate</h2>
 
-    {% if line_items is defined and line_items %}
+    {% if line_items is defined and line_items and line_items.lines|length > 0 %}
     <!-- RESULTS SECTION -->
     <div class="estimate-results">
         <h3>Project Details</h3>
