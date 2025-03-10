@@ -103,6 +103,9 @@ def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
             logger.warning("No project details found in image")
             
         logger.debug(f"Extracted project data: {project_data}")
+    except Exception as e:
+        logger.error(f"Error parsing response: {str(e)}")
+        raise
 
     # Convert to separate customer and project dictionaries for backward compatibility
     customer = {
