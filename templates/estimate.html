@@ -4,8 +4,8 @@
 <div class="estimate-form">
     <h2>Project Estimate</h2>
 
-    <!-- Always show the form -->
-    <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)">
+    <!-- Show the form only if we're not showing results -->
+    <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)" {% if line_items is defined and line_items %}style="display:none"{% endif %}>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="card mb-4">
             <div class="card-header">
@@ -41,17 +41,17 @@
         </div>
     </form>
     
-    <!-- Always show results if available -->
-    <div class="estimate-results" {% if not line_items %}style="display:none"{% endif %}>
+    <!-- Show results only if available -->
+    <div class="estimate-results" {% if not (line_items is defined and line_items) %}style="display:none"{% endif %}>
         <!-- Debug info to help troubleshoot -->
         <div class="alert alert-info d-none">
-            Debug: Project details available: {{ project_details is not none }}, 
-            Line items available: {{ line_items is not none and line_items.lines|length > 0 }}, 
-            Customer available: {{ customer is not none }},
-            Form is none: {{ form is none }}
+            Debug: Project details available: {{ project_details is defined and project_details is not none }}, 
+            Line items available: {{ line_items is defined and line_items is not none }}, 
+            Customer available: {{ customer is defined and customer is not none }},
+            Form defined: {{ form is defined }}
         </div>
 
-        {% if not project_details or not line_items or not customer %}
+        {% if not (project_details is defined and project_details) or not (line_items is defined and line_items) or not (customer is defined and customer) %}
         <div class="alert alert-danger">
             Error: Some required data is missing. Please try again or contact support.
         </div>
