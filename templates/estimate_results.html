@@ -52,15 +52,15 @@
                         <td>{{ item.name }}</td>
                         <td>{{ item.quantity }}</td>
                         <td>{{ item.unit }}</td>
-                        <td>${{ item.price|round(2) }}</td>
-                        <td>${{ item.total|round(2) }}</td>
+                        <td>${{ "%.2f"|format(item.price) }}</td>
+                        <td>${{ "%.2f"|format(item.total) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
                     <tr>
                         <td colspan="4" class="text-end"><strong>Total:</strong></td>
-                        <td><strong>${{ total_cost|round(2) }}</strong></td>
+                        <td><strong>${{ "%.2f"|format(total_cost) }}</strong></td>
                     </tr>
                 </tfoot>
             </table>
@@ -69,9 +69,9 @@
     
     <form action="{{ url_for('create_proposal') }}" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="project_details" value="{{ project_details|tojson }}">
-        <input type="hidden" name="line_items" value="{{ line_items|tojson }}">
-        <input type="hidden" name="customer" value="{{ customer|tojson }}">
+        <input type="hidden" name="project_details" value='{{ project_details|tojson|safe }}'>
+        <input type="hidden" name="line_items" value='{{ line_items|tojson|safe }}'>
+        <input type="hidden" name="customer" value='{{ customer|tojson|safe }}'>
         <button type="submit" class="btn btn-primary">Generate Proposal</button>
         <a href="{{ url_for('estimate') }}" class="btn btn-secondary">New Estimate</a>
     </form>
