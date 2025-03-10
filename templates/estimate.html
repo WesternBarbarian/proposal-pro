@@ -4,7 +4,7 @@
 <div class="estimate-form">
     <h2>Project Estimate</h2>
 
-    {% if form %}
+    {% if form is not none %}
     <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="card mb-4">
