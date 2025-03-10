@@ -369,9 +369,8 @@ def save_proposal():
         return redirect(url_for('estimate'))
 
 @app.route('/save-to-drive', methods=['POST'])
+@require_auth
 def save_to_drive():
-    if 'credentials' not in session:
-        return redirect(url_for('login'))
 
     try:
         content = request.form.get('proposal_content')
@@ -594,8 +593,6 @@ def delete_template_route():
     success, message = delete_template(template_id)
     flash(message, 'success' if success else 'error')
     return redirect(url_for('proposal_templates'))
-
-    return redirect(url_for('price_list'))
 
 #if __name__ == '__main__':
  #   app.run(host='0.0.0.0', port=5000, debug=True)
