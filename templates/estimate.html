@@ -4,7 +4,7 @@
 <div class="estimate-form">
     <h2>Project Estimate</h2>
 
-    {% if form %}
+    <!-- Always show the form -->
     <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="card mb-4">
@@ -40,8 +40,9 @@
             <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
-    {% else %}
-    <div class="estimate-results">
+    
+    <!-- Always show results if available -->
+    <div class="estimate-results" {% if not line_items %}style="display:none"{% endif %}>
         <!-- Debug info to help troubleshoot -->
         <div class="alert alert-info d-none">
             Debug: Project details available: {{ project_details is not none }}, 
@@ -123,6 +124,5 @@
             </div>
         </form>
     </div>
-    {% endif %}
 </div>
 {% endblock %}
