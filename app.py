@@ -277,8 +277,6 @@ def estimate():
                                   customer=customer,
                                   line_items=line_items_dict,
                                   authenticated=True)
-            app.logger.debug(f"Response html length: {len(response)}")
-            return response
         except Exception as e:
             error_msg = str(e)
             logging.error(f"Error processing estimate: {error_msg}", exc_info=True)
