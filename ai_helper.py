@@ -70,11 +70,15 @@ def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
     import logging
     logger = logging.getLogger(__name__)
     
+    if not os.path.exists(file_path):
+        logger.error(f"File not found: {file_path}")
+        raise FileNotFoundError(f"File not found: {file_path}")
+        
     logger.info(f"Uploading file from {file_path} to Gemini API")
     img_file = client.files.upload(file=file_path, config={'display_name': 'project_details'})
     logger.info(f"File uploaded successfully")
 
-    prompt = "Extract the structured data from the following file"
+    prompt = "Extract the structured data from the following file. Include customer name, contact details, and project information."
     logger.info(f"Sending prompt to Gemini API: {prompt}")
     response = client.models.generate_content(
         model=model,
@@ -86,9 +90,19 @@ def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
     try:
         project_data: ProjectData = response.parsed
         logger.info(f"Response parsed successfully")
-    except Exception as e:
-        logger.error(f"Error parsing response: {str(e)}")
-        raise
+        
+        if not project_data:
+            logger.error("Parsed response is empty")
+            raise ValueError("Failed to extract data from image")
+            
+        # Verify we have at least some basic data
+        if not project_data.customer_name or project_data.customer_name == "unknown":
+            logger.warning("Customer name not found in image")
+            
+        if not project_data.details or len(project_data.details) == 0:
+            logger.warning("No project details found in image")
+            
+        logger.debug(f"Extracted project data: {project_data}")
 
     # Convert to separate customer and project dictionaries for backward compatibility
     customer = {

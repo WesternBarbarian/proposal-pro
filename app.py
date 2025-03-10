@@ -183,7 +183,10 @@ def estimate():
         try:
             file_info = "No file uploaded"
             project_data = ""
+            customer = None
+            project_details = None
 
+            # STEP 1: Extract project data (either from image or text)
             if form.file.data:
                 file = form.file.data
                 file_info = f"File upload: {file.filename}"
@@ -216,9 +219,16 @@ def estimate():
             else:
                 flash('Please provide either a file or project description.', 'error')
                 return redirect(url_for('estimate'))
+            
+            # STEP 2: Process the extracted data (common workflow for both paths)
+            if not customer or not project_details:
+                flash('Failed to extract project details. Please try again.', 'error')
+                return redirect(url_for('estimate'))
                 
-            app.logger.debug(f"Project details returned from analyze_project: {project_details}")
-            app.logger.debug(f"Customer data returned: {customer}")
+            app.logger.debug(f"Project details extracted: {project_details}")
+            app.logger.debug(f"Customer data extracted: {customer}")
+            
+            # STEP 3: Load price list and calculate costs
             price_list = load_price_list()
 
             # Track form data in Google Sheet if user is authenticated
@@ -238,8 +248,7 @@ def estimate():
                 except Exception as e:
                     app.logger.error(f"Error tracking form data: {str(e)}")
 
-
-            # Get line items with prices
+            # STEP 4: Calculate line items and totals
             app.logger.debug(f"Project details before lookup_prices: {project_details}")
             line_items = lookup_prices(project_details, price_list)
             app.logger.debug(f"Line items after lookup_prices: {line_items}")
@@ -250,18 +259,19 @@ def estimate():
             line_items_dict = line_items.dict()
             app.logger.debug(f"Converted line items to dict: {line_items_dict}")
 
-
-            # Simplify the response logic
+            # STEP 5: Render the results
             app.logger.debug(f"Rendering template with results. Line items count: {len(line_items_dict['lines'])}")
+            app.logger.debug(f"Customer data: {customer}")
+            app.logger.debug(f"Project details: {project_details}")
             
             # Return the template with all needed variables and form=None to display results
             return render_template('estimate.html',
-                                    project_details=project_details,
-                                    total_cost=total_cost,
-                                    customer=customer,
-                                    line_items=line_items_dict,
-                                    authenticated=True,
-                                    form=None)  # Explicitly set form to None to prevent form display
+                                  project_details=project_details,
+                                  total_cost=total_cost,
+                                  customer=customer,
+                                  line_items=line_items_dict,
+                                  authenticated=True,
+                                  form=None)  # Explicitly set form to None to prevent form display
         except Exception as e:
             error_msg = str(e)
             logging.error(f"Error processing estimate: {error_msg}")

@@ -43,7 +43,19 @@
     {% else %}
     <div class="estimate-results">
         <!-- Debug info to help troubleshoot -->
-        <div class="alert alert-info">Debug: Project details available: {{ project_details is not none }}, Line items: {{ line_items is not none }}, Form: {{ form is none }}</div>
+        <div class="alert alert-info">
+            Debug: Project details available: {{ project_details is not none }}, 
+            Line items available: {{ line_items is not none and line_items.lines|length > 0 }}, 
+            Customer available: {{ customer is not none }},
+            Form is none: {{ form is none }}
+        </div>
+        
+        {% if not project_details or not line_items or not customer %}
+        <div class="alert alert-danger">
+            Error: Some required data is missing. Please try again or contact support.
+        </div>
+        <a href="{{ url_for('estimate') }}" class="btn btn-primary">Return to Estimate Form</a>
+        {% else %}
         <h3>Project Details</h3>
         <div class="card mb-4">
             <div class="card-body">
@@ -97,6 +109,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <form method="POST" action="{{ url_for('create_proposal') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
