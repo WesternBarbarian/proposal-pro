@@ -252,6 +252,8 @@ def estimate():
 
             # Add additional logging to see exactly what we're sending to the template
             app.logger.debug(f"Rendering template with: customer={customer}, project_details={project_details}, total_cost={total_cost}")
+            app.logger.debug(f"Line items dict: {line_items_dict}")
+            app.logger.debug(f"Setting form=None to ensure results display")
             
             # Return a complete render with all needed variables and no form
             return render_template('estimate.html',
