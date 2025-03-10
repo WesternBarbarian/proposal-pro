@@ -270,14 +270,16 @@ def estimate():
             app.logger.debug(f"customer type: {type(customer)}")
             app.logger.debug(f"line_items_dict type: {type(line_items_dict)}")
             
-            # Return the results template with all needed variables including the form
+            # Always include the form object for template rendering regardless of input method
+            # This way the template can use the form object for validation even if data came from image
             return render_template('estimate.html',
-                                  form=form,
+                                  form=form,  # Always pass form even if it wasn't used for input
                                   project_details=project_details,
                                   total_cost=total_cost,
                                   customer=customer,
                                   line_items=line_items_dict,
-                                  authenticated=True)
+                                  authenticated=True,
+                                  input_processed=True)  # Flag to indicate processing completed
         except Exception as e:
             error_msg = str(e)
             logging.error(f"Error processing estimate: {error_msg}", exc_info=True)
