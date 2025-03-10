@@ -47,13 +47,13 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for item in line_items.lines %}
+                    {% for item in line_items['lines'] %}
                     <tr>
-                        <td>{{ item.name }}</td>
-                        <td>{{ item.quantity }}</td>
-                        <td>{{ item.unit }}</td>
-                        <td>${{ "%.2f"|format(item.price) }}</td>
-                        <td>${{ "%.2f"|format(item.total) }}</td>
+                        <td>{{ item['name'] }}</td>
+                        <td>{{ item['quantity'] }}</td>
+                        <td>{{ item['unit'] }}</td>
+                        <td>${{ "%.2f"|format(item['price']) }}</td>
+                        <td>${{ "%.2f"|format(item['total']) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
