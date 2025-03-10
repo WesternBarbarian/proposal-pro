@@ -365,11 +365,15 @@ def estimate_results():
     
     app.logger.debug(f"Using line items directly from session: {line_items}")
     
+    # Include the estimate_id in the template context
+    estimate_id = session.get('estimate_id')
+    
     return render_template('estimate_results.html',
                           project_details=project_details,
                           total_cost=total_cost,
                           customer=customer,
                           line_items=line_items,
+                          estimate_id=estimate_id,
                           authenticated=True)
 
 @app.route('/generate_proposal', methods=['POST'])
@@ -377,6 +381,14 @@ def estimate_results():
 def create_proposal():
     try:
         app.logger.debug("Creating proposal from form data")
+        
+        # Get estimate ID if present
+        estimate_id = request.form.get('estimate_id')
+        if estimate_id:
+            session['estimate_id'] = estimate_id
+            session.modified = True
+            app.logger.debug(f"Restored estimate_id from form: {estimate_id}")
+            
         project_details = json.loads(request.form.get('project_details'))
         line_items_data = json.loads(request.form.get('line_items'))
         customer_data = json.loads(request.form.get('customer'))
