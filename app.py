@@ -187,15 +187,23 @@ def estimate():
             if form.file.data:
                 file = form.file.data
                 file_info = f"File upload: {file.filename}"
+                app.logger.info(f"Processing uploaded file: {file.filename}")
                 # Save file temporarily
                 temp_path = f"temp_{file.filename}"
                 file.save(temp_path)
                 try:
+                    app.logger.info(f"Extracting data from image at {temp_path}")
                     customer, project_details = extract_project_data_from_image(temp_path)
+                    app.logger.info(f"Customer data extracted: {customer}")
+                    app.logger.info(f"Project details extracted: {project_details}")
+                except Exception as e:
+                    app.logger.error(f"Error extracting data from image: {str(e)}")
+                    raise
                 finally:
                     # Clean up temporary file
                     if os.path.exists(temp_path):
                         os.remove(temp_path)
+                        app.logger.info(f"Temporary file {temp_path} removed")
             elif form.project_description.data:
                 project_data = form.project_description.data
                 if not project_data:

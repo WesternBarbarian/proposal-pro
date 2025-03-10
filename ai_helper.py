@@ -67,15 +67,28 @@ def extract_project_data(description: str) -> tuple[dict, dict]:
     return customer, project
 
 def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Uploading file from {file_path} to Gemini API")
     img_file = client.files.upload(file=file_path, config={'display_name': 'project_details'})
+    logger.info(f"File uploaded successfully")
 
     prompt = "Extract the structured data from the following file"
+    logger.info(f"Sending prompt to Gemini API: {prompt}")
     response = client.models.generate_content(
         model=model,
         contents=[prompt, img_file],
         config={'response_mime_type': 'application/json', 'response_schema': ProjectData}
     )
-    project_data: ProjectData = response.parsed
+    logger.info(f"Received response from Gemini API")
+    
+    try:
+        project_data: ProjectData = response.parsed
+        logger.info(f"Response parsed successfully")
+    except Exception as e:
+        logger.error(f"Error parsing response: {str(e)}")
+        raise
 
     # Convert to separate customer and project dictionaries for backward compatibility
     customer = {
@@ -85,11 +98,13 @@ def extract_project_data_from_image(file_path: str) -> tuple[dict, dict]:
         "address": project_data.customer_address,
         "project_address": project_data.project_address
     }
+    logger.info(f"Customer data: {customer}")
 
     project = {
         "notes": project_data.notes,
         "details": [{"item": detail.item, "quantity": detail.quantity} for detail in project_data.details]
     }
+    logger.info(f"Project data: {project}")
 
     return customer, project
 
