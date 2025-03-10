@@ -265,15 +265,46 @@ def process_estimate():
         line_items_dict = line_items.dict()
         app.logger.debug(f"Converted line items to dict: {line_items_dict}")
 
-        # STEP 5: Redirect to results page with data in session
+        # STEP 5: Save data to session and also to a temporary file as backup
+        app.logger.debug(f"Before saving to session - Session keys: {list(session.keys())}")
+        
+        # Store data in session
         session['estimate_data'] = {
             'project_details': project_details,
             'total_cost': total_cost,
             'customer': customer,
             'line_items': line_items_dict
         }
-
-        return redirect(url_for('estimate_results'))
+        
+        # Force session save
+        session.modified = True
+        
+        # Generate a unique ID for this estimate if not already present
+        if 'estimate_id' not in session:
+            import uuid
+            session['estimate_id'] = str(uuid.uuid4())
+        
+        # Also save to a temporary file as backup
+        estimate_id = session['estimate_id']
+        estimate_file = f"estimate_{estimate_id}.json"
+        try:
+            with open(estimate_file, 'w') as f:
+                json.dump({
+                    'project_details': project_details,
+                    'total_cost': total_cost,
+                    'customer': customer,
+                    'line_items': line_items_dict
+                }, f)
+            app.logger.debug(f"Saved estimate data to file: {estimate_file}")
+        except Exception as e:
+            app.logger.error(f"Error saving estimate data to file: {str(e)}")
+        
+        app.logger.debug(f"After saving to session - Session keys: {list(session.keys())}")
+        app.logger.debug(f"Session estimate_data: {session.get('estimate_data')}")
+        app.logger.debug(f"Estimate ID: {estimate_id}")
+        
+        # Redirect to results page with ID in query param as fallback
+        return redirect(url_for('estimate_results', id=estimate_id))
     except Exception as e:
         error_msg = str(e)
         logging.error(f"Error processing estimate: {error_msg}", exc_info=True)
@@ -289,7 +320,38 @@ def process_estimate():
 @app.route('/estimate_results')
 @require_auth
 def estimate_results():
+    app.logger.debug(f"In estimate_results - Session ID: {session.sid if hasattr(session, 'sid') else 'No SID'}")
+    app.logger.debug(f"Session keys: {list(session.keys())}")
+    
+    # Check if we have an estimate ID in the query parameters
+    estimate_id = request.args.get('id') or session.get('estimate_id')
+    app.logger.debug(f"Estimate ID from request or session: {estimate_id}")
+    
+    # First try to get data from session
     estimate_data = session.get('estimate_data')
+    app.logger.debug(f"Current estimate_data in session: {estimate_data}")
+    
+    # If not in session but we have an ID, try to load from file
+    if not estimate_data and estimate_id:
+        try:
+            estimate_file = f"estimate_{estimate_id}.json"
+            app.logger.debug(f"Trying to load estimate data from file: {estimate_file}")
+            
+            if os.path.exists(estimate_file):
+                with open(estimate_file, 'r') as f:
+                    estimate_data = json.load(f)
+                app.logger.debug(f"Loaded estimate data from file: {estimate_data}")
+                
+                # Store in session for future requests
+                session['estimate_data'] = estimate_data
+                session['estimate_id'] = estimate_id
+                session.modified = True
+            else:
+                app.logger.warning(f"Estimate file not found: {estimate_file}")
+        except Exception as e:
+            app.logger.error(f"Error loading estimate data from file: {str(e)}")
+    
+    # If still no data, redirect to create a new estimate
     if not estimate_data:
         flash('No estimate data found. Please create a new estimate.', 'error')
         return redirect(url_for('estimate'))
