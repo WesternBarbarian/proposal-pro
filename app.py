@@ -251,25 +251,17 @@ def estimate():
             app.logger.debug(f"Converted line items to dict: {line_items_dict}")
 
 
-            # Add additional logging to see exactly what we're sending to the template
-            app.logger.debug(f"Rendering template with: customer={customer}, project_details={project_details}, total_cost={total_cost}")
-            app.logger.debug(f"Line items dict: {line_items_dict}")
-            app.logger.debug(f"Setting form=None to ensure results display")
+            # Simplify the response logic
+            app.logger.debug(f"Rendering template with results. Line items count: {len(line_items_dict['lines'])}")
             
-            # Return a complete render with all needed variables and no form
-            app.logger.debug(f"About to render template with results. Line items count: {len(line_items_dict['lines'])}")
-            
-            response = render_template('estimate.html',
+            # Return the template with all needed variables and form=None to display results
+            return render_template('estimate.html',
                                     project_details=project_details,
                                     total_cost=total_cost,
                                     customer=customer,
                                     line_items=line_items_dict,
                                     authenticated=True,
                                     form=None)  # Explicitly set form to None to prevent form display
-            
-            # Add final debug log to confirm we're returning the results
-            app.logger.debug(f"Returning response with length: {len(response)}")
-            return response
         except Exception as e:
             error_msg = str(e)
             logging.error(f"Error processing estimate: {error_msg}")
