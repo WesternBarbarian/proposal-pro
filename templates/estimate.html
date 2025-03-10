@@ -5,7 +5,13 @@
 <div class="estimate-form">
     <h2>Project Estimate</h2>
     
-    {% if show_results %}
+    <!-- Debug information -->
+    <div style="background: #f8f9fa; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; display: none;">
+        <p><strong>Debug:</strong> show_results = {{ show_results|default('undefined') }}</p>
+        <p><strong>Line items:</strong> {{ 'Exists with ' + line_items.lines|length|string + ' items' if line_items and line_items.lines else 'Not found' }}</p>
+    </div>
+    
+    {% if show_results is defined and show_results %}
     <!-- RESULTS SECTION -->
     <div class="estimate-results">
         <h3>Project Details</h3>

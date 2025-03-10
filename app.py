@@ -292,6 +292,9 @@ def estimate():
                 flash(f'Error processing your request: {error_msg}. Please try again.', 'error')
             return redirect(url_for('estimate'))
 
+    # Make sure show_results is explicitly set to False for GET requests
+    return render_template('estimate.html', form=form, authenticated=True, show_results=False)
+
     return render_template('estimate.html', form=form, authenticated=True)
 
 @app.route('/generate_proposal', methods=['POST'])
