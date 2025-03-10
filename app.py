@@ -179,7 +179,7 @@ def logout():
 @require_auth
 def estimate():
     form = ProjectForm()
-    if form.validate_on_submit():
+    if request.method == 'POST':
         try:
             file_info = "No file uploaded"
             project_data = ""
@@ -187,8 +187,8 @@ def estimate():
             project_details = None
 
             # STEP 1: Extract project data (either from image or text)
-            if form.file.data:
-                file = form.file.data
+            if request.files and 'file' in request.files and request.files['file'].filename:
+                file = request.files['file']
                 file_info = f"File upload: {file.filename}"
                 app.logger.info(f"Processing uploaded file: {file.filename}")
                 # Save file temporarily
@@ -210,8 +210,8 @@ def estimate():
                     if os.path.exists(temp_path):
                         os.remove(temp_path)
                         app.logger.info(f"Temporary file {temp_path} removed")
-            elif form.project_description.data:
-                project_data = form.project_description.data
+            elif request.form.get('project_description'):
+                project_data = request.form.get('project_description')
                 if not project_data:
                     flash('Please provide either a file or project description.', 'error')
                     return redirect(url_for('estimate'))
