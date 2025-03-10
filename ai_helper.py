@@ -198,6 +198,67 @@ class Line_Items(BaseModel):
 
 
 def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # First, try to use direct mapping for items if they exist in the price list
+    # This will handle the case when API returns are not being processed correctly
+    try:
+        logger.debug("Attempting direct price lookup before using AI")
+        manual_line_items = []
+        
+        # Create a lowercase version of the price list for case-insensitive matching
+        lowercase_price_map = {}
+        if isinstance(price_list, dict):
+            for item_name, item_data in price_list.items():
+                lowercase_price_map[item_name.lower()] = {
+                    "name": item_name,  # Keep original capitalization for display
+                    "unit": item_data.get("unit", "unknown"),
+                    "price": float(item_data.get("price", 0.0))
+                }
+        
+        # Try to match items from project details to price list
+        if project_details and "details" in project_details:
+            for detail in project_details["details"]:
+                item_name = detail.get("item", "")
+                quantity = detail.get("quantity", 0)
+                
+                # Look for an exact match or a case-insensitive match
+                item_data = None
+                if item_name in price_list:
+                    # Direct match
+                    item_data = {
+                        "name": item_name,
+                        "unit": price_list[item_name].get("unit", "unknown"),
+                        "price": float(price_list[item_name].get("price", 0.0))
+                    }
+                elif item_name.lower() in lowercase_price_map:
+                    # Case-insensitive match
+                    item_data = lowercase_price_map[item_name.lower()]
+                
+                if item_data:
+                    # We found a match, create a Line_Item
+                    line_item = Line_Item(
+                        name=item_data["name"],
+                        unit=item_data["unit"],
+                        price=item_data["price"],
+                        quantity=quantity
+                    )
+                    manual_line_items.append(line_item)
+                    logger.debug(f"Direct match found for {item_name}, price: {item_data['price']}")
+        
+        # If we have matches for all items, return the Line_Items
+        if manual_line_items and len(manual_line_items) == len(project_details["details"]):
+            logger.debug(f"Using direct matching for all {len(manual_line_items)} items")
+            return Line_Items(lines=manual_line_items)
+        else:
+            logger.debug(f"Direct matching found {len(manual_line_items)} items, but needed {len(project_details['details'])}")
+    except Exception as e:
+        logger.error(f"Error in direct price lookup: {str(e)}")
+        # Continue to AI lookup if direct lookup fails
+    
+    # If direct lookup didn't work or didn't find all items, fall back to AI
+    logger.debug("Falling back to AI for price lookup")
     sys_instruct="""##Role: You are a pricing specialist.
     You look up the price of items from the provided list.
     ##Task: Look up prices.
@@ -206,6 +267,7 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
     If you are provided with a quantity, return the quantity for the item in the json response.
     If you are not provided with a quantity put zero. DO NOT GUESS ABOUT QUANTITY.
     Carefully review the users input and make sure you know the quantity for each item.
+    IMPORTANT: Match the exact spelling and capitalization of the items in the user's request.
     ### Example 1:
     {
       "role": "user",
@@ -309,12 +371,11 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
       ]
     }
     """
-    price_list = price_list
 
-
-    user_request= project_details
-
+    user_request = project_details
     prompt = f"Look up the prices from the {price_list} for the items in {user_request}"
+    
+    logger.debug(f"Sending prompt to Gemini API: {prompt}")
     response = client.models.generate_content(
         model=model,
         contents=prompt,
@@ -324,10 +385,32 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
             response_schema=Line_Items,
         ),
     )
-
+    logger.debug("Received response from Gemini API")
 
     line_items: Line_Items = response.parsed
-
+    
+    # Ensure we're preserving the original capitalization from the project details
+    if project_details and "details" in project_details:
+        matched_names = {}
+        for detail in project_details["details"]:
+            item_name = detail.get("item", "").lower()
+            matched_names[item_name] = detail.get("item", "")  # Original capitalization
+        
+        # Update the line items with the original capitalization
+        updated_lines = []
+        for line in line_items.lines:
+            original_name = matched_names.get(line.name.lower(), line.name)
+            updated_line = Line_Item(
+                name=original_name,
+                unit=line.unit,
+                price=line.price,
+                quantity=line.quantity
+            )
+            updated_lines.append(updated_line)
+        
+        if updated_lines:
+            line_items = Line_Items(lines=updated_lines)
+    
     return line_items
 
 
