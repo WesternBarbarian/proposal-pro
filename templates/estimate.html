@@ -40,10 +40,10 @@
             <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
-    {% elif project_details is not none %}
+    {% elif project_details is not none or form is none %}
     <div class="estimate-results">
-        <!-- Debug info to see what's available -->
-        <!-- <div class="alert alert-info">Project details available: {{ project_details is not none }}, Line items: {{ line_items is not none }}</div> -->
+        <!-- Debug info to help troubleshoot -->
+        <div class="alert alert-info d-none">Debug: Project details available: {{ project_details is not none }}, Line items: {{ line_items is not none }}, Form: {{ form is none }}</div>
         <h3>Project Details</h3>
         <div class="card mb-4">
             <div class="card-body">

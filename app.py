@@ -198,6 +198,7 @@ def estimate():
                     app.logger.info(f"Project details extracted: {project_details}")
                     # Set project_data for consistency with text input flow
                     project_data = f"Data extracted from image: {file.filename}"
+                    app.logger.debug(f"Project data from image: {project_data}")
                 except Exception as e:
                     app.logger.error(f"Error extracting data from image: {str(e)}")
                     raise
@@ -256,13 +257,19 @@ def estimate():
             app.logger.debug(f"Setting form=None to ensure results display")
             
             # Return a complete render with all needed variables and no form
-            return render_template('estimate.html',
+            app.logger.debug(f"About to render template with results. Line items count: {len(line_items_dict['lines'])}")
+            
+            response = render_template('estimate.html',
                                     project_details=project_details,
                                     total_cost=total_cost,
                                     customer=customer,
                                     line_items=line_items_dict,
                                     authenticated=True,
                                     form=None)  # Explicitly set form to None to prevent form display
+            
+            # Add final debug log to confirm we're returning the results
+            app.logger.debug(f"Returning response with length: {len(response)}")
+            return response
         except Exception as e:
             error_msg = str(e)
             logging.error(f"Error processing estimate: {error_msg}")
