@@ -1,10 +1,11 @@
+
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="estimate-form">
+<div class="container">
     <h2>Project Estimate</h2>
 
-    <form method="POST" action="{{ url_for('process_estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)">
+    <form method="POST" action="{{ url_for('process_estimate') }}" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="card mb-4">
             <div class="card-header">
