@@ -5,7 +5,7 @@
     <h2>Project Estimate</h2>
 
     <!-- Show the form only if we're not showing results -->
-    <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)" {% if input_processed is defined and input_processed %}style="display:none"{% endif %}>
+    <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)" {% if line_items is defined and line_items %}style="display:none"{% endif %}>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="card mb-4">
             <div class="card-header">
@@ -42,7 +42,7 @@
     </form>
     
     <!-- Show results only if available -->
-    <div class="estimate-results" {% if not (input_processed is defined and input_processed) %}style="display:none"{% endif %}>
+    <div class="estimate-results" {% if not (line_items is defined and line_items) %}style="display:none"{% endif %}>
         <!-- Debug info to help troubleshoot -->
         <div class="alert alert-info d-none">
             Debug: Project details available: {{ project_details is defined and project_details is not none }}, 
