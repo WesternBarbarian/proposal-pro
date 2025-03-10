@@ -270,8 +270,9 @@ def estimate():
             app.logger.debug(f"customer type: {type(customer)}")
             app.logger.debug(f"line_items_dict type: {type(line_items_dict)}")
             
-            # Return the results template without the form
+            # Return the results template with all needed variables including the form
             return render_template('estimate.html',
+                                  form=form,
                                   project_details=project_details,
                                   total_cost=total_cost,
                                   customer=customer,
