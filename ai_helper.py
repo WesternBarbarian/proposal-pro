@@ -327,9 +327,12 @@ def generate_proposal(project_details: dict, customer: dict, line_items: Line_It
     1. Please write the project analysis based on these notes:
     {project_details} and this estimate: {line_items}. It is OK if
     some amounts are zero.
-    2. Based on the analysis above write a one-paragraph estimate to {customer['name']}. Do not make up any details. Use only the information from the source files and analysis above. Use the following examples to determine the voice, tone, and length of the proposal:
+    2. Based on the analysis above write a one-paragraph estimate to {customer['name']}. Do not make up any details. Use only the information from the source files and analysis above. Prepare the proposal using the following examples to determine the voice, tone, and length of the proposal (even if it seems silly):
 
     {template_examples}
+
+--
+    Do not use markdown. Simply use plain text.
     """
 
 
