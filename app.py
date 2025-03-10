@@ -212,7 +212,12 @@ def estimate():
                     flash('Please provide either a file or project description.', 'error')
                     return redirect(url_for('estimate'))
                 customer, project_details = extract_project_data(project_data)
+            else:
+                flash('Please provide either a file or project description.', 'error')
+                return redirect(url_for('estimate'))
+                
             app.logger.debug(f"Project details returned from analyze_project: {project_details}")
+            app.logger.debug(f"Customer data returned: {customer}")
             price_list = load_price_list()
 
             # Track form data in Google Sheet if user is authenticated
@@ -248,6 +253,7 @@ def estimate():
             # Add additional logging to see exactly what we're sending to the template
             app.logger.debug(f"Rendering template with: customer={customer}, project_details={project_details}, total_cost={total_cost}")
             
+            # Return a complete render with all needed variables and no form
             return render_template('estimate.html',
                                     project_details=project_details,
                                     total_cost=total_cost,

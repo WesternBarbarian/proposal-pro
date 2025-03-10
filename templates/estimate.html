@@ -40,7 +40,7 @@
             <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
-    {% elif project_details is defined %}
+    {% elif project_details is defined and project_details %}
     <div class="estimate-results">
         <h3>Project Details</h3>
         <div class="card mb-4">
@@ -48,15 +48,15 @@
                 <h4>Customer Information</h4>
                 <dl class="row">
                     <dt class="col-sm-3">Name:</dt>
-                    <dd class="col-sm-9">{{ customer.name }}</dd>
+                    <dd class="col-sm-9">{{ customer.name if customer and customer.name else "N/A" }}</dd>
                     <dt class="col-sm-3">Phone:</dt>
-                    <dd class="col-sm-9">{{ customer.phone }}</dd>
+                    <dd class="col-sm-9">{{ customer.phone if customer and customer.phone else "N/A" }}</dd>
                     <dt class="col-sm-3">Email:</dt>
-                    <dd class="col-sm-9">{{ customer.email }}</dd>
+                    <dd class="col-sm-9">{{ customer.email if customer and customer.email else "N/A" }}</dd>
                     <dt class="col-sm-3">Address:</dt>
-                    <dd class="col-sm-9">{{ customer.address }}</dd>
+                    <dd class="col-sm-9">{{ customer.address if customer and customer.address else "N/A" }}</dd>
                     <dt class="col-sm-3">Project Address:</dt>
-                    <dd class="col-sm-9">{{ customer.project_address }}</dd>
+                    <dd class="col-sm-9">{{ customer.project_address if customer and customer.project_address else "N/A" }}</dd>
                 </dl>
 
                 <h4>Notes</h4>
