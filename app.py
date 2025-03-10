@@ -270,26 +270,25 @@ def estimate():
             app.logger.debug(f"customer type: {type(customer)}")
             app.logger.debug(f"line_items_dict type: {type(line_items_dict)}")
             
-            # Don't pass form variable at all to template context
-            response = render_template('estimate.html',
+            # Return the results template without the form
+            return render_template('estimate.html',
                                   project_details=project_details,
                                   total_cost=total_cost,
                                   customer=customer,
                                   line_items=line_items_dict,
-                                  authenticated=True,
-                                  form=None)  # Explicitly set form to None to prevent form display
+                                  authenticated=True)
             app.logger.debug(f"Response html length: {len(response)}")
             return response
         except Exception as e:
             error_msg = str(e)
-            logging.error(f"Error processing estimate: {error_msg}")
+            logging.error(f"Error processing estimate: {error_msg}", exc_info=True)
 
             if "429 RESOURCE_EXHAUSTED" in error_msg:
                 flash('The AI service is currently at capacity. Please wait a few minutes and try again.', 'error')
             elif "Request payload size exceeds the limit" in error_msg:
                 flash('The uploaded file is too large. Please reduce the file size or use a smaller file.', 'error')
             else:
-                flash('Error processing your request. Please try again.', 'error')
+                flash(f'Error processing your request: {error_msg}. Please try again.', 'error')
             return redirect(url_for('estimate'))
 
     return render_template('estimate.html', form=form, authenticated=True)
