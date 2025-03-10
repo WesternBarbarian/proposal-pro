@@ -114,10 +114,18 @@
 
         <form method="POST" action="{{ url_for('create_proposal') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            {% if project_details is defined and project_details %}
             <input type="hidden" name="project_details" value='{{ project_details|tojson|safe }}'>
+            {% endif %}
+            {% if total_cost is defined and total_cost %}
             <input type="hidden" name="total_cost" value="{{ total_cost }}">
+            {% endif %}
+            {% if customer is defined and customer %}
             <input type="hidden" name="customer" value='{{ customer|tojson|safe }}'>
+            {% endif %}
+            {% if line_items is defined and line_items %}
             <input type="hidden" name="line_items" value='{{ line_items|tojson|safe }}'>
+            {% endif %}
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-success">Generate Proposal</button>
                 <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Cancel</a>
