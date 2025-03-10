@@ -4,8 +4,77 @@
 <div class="estimate-form">
     <h2>Project Estimate</h2>
 
-    <!-- Show the form only if we're not showing results -->
-    <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)" {% if line_items is defined and line_items %}style="display:none"{% endif %}>
+    {% if line_items is defined and line_items %}
+    <!-- RESULTS SECTION -->
+    <div class="estimate-results">
+        <h3>Project Details</h3>
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4>Customer Information</h4>
+                <dl class="row">
+                    <dt class="col-sm-3">Name:</dt>
+                    <dd class="col-sm-9">{{ customer.name if customer and customer.name else "N/A" }}</dd>
+                    <dt class="col-sm-3">Phone:</dt>
+                    <dd class="col-sm-9">{{ customer.phone if customer and customer.phone else "N/A" }}</dd>
+                    <dt class="col-sm-3">Email:</dt>
+                    <dd class="col-sm-9">{{ customer.email if customer and customer.email else "N/A" }}</dd>
+                    <dt class="col-sm-3">Address:</dt>
+                    <dd class="col-sm-9">{{ customer.address if customer and customer.address else "N/A" }}</dd>
+                    <dt class="col-sm-3">Project Address:</dt>
+                    <dd class="col-sm-9">{{ customer.project_address if customer and customer.project_address else "N/A" }}</dd>
+                </dl>
+
+                <h4>Notes</h4>
+                <p>{{ project_details.notes }}</p>
+
+                <h4>Cost Breakdown</h4>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Unit</th>
+                                <th>Quantity</th>
+                                <th>Price/Unit</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in line_items.lines %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.unit }}</td>
+                                <td>{{ "%.2f"|format(item.quantity) }}</td>
+                                <td>${{ "%.2f"|format(item.price) }}</td>
+                                <td>${{ "%.2f"|format(item.total) }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="table-active">
+                                <td colspan="4" class="text-end"><strong>Total Cost:</strong></td>
+                                <td><strong>${{ "%.2f"|format(total_cost) }}</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('create_proposal') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="project_details" value='{{ project_details|tojson|safe }}'>
+            <input type="hidden" name="total_cost" value="{{ total_cost }}">
+            <input type="hidden" name="customer" value='{{ customer|tojson|safe }}'>
+            <input type="hidden" name="line_items" value='{{ line_items|tojson|safe }}'>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-success">Generate Proposal</button>
+                <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Start New Estimate</a>
+            </div>
+        </form>
+    </div>
+
+    {% else %}
+    <!-- INPUT FORM SECTION -->
+    <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <div class="card mb-4">
             <div class="card-header">
@@ -40,97 +109,6 @@
             <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
-    
-    <!-- Show results only if available -->
-    <div class="estimate-results" {% if not (line_items is defined and line_items) %}style="display:none"{% endif %}>
-        <!-- Debug info to help troubleshoot -->
-        <div class="alert alert-info d-none">
-            Debug: Project details available: {{ project_details is defined and project_details is not none }}, 
-            Line items available: {{ line_items is defined and line_items is not none }}, 
-            Customer available: {{ customer is defined and customer is not none }},
-            Form defined: {{ form is defined }}
-        </div>
-
-        {% if not (project_details is defined and project_details) or not (line_items is defined and line_items) or not (customer is defined and customer) %}
-        <div class="alert alert-danger">
-            Error: Some required data is missing. Please try again or contact support.
-        </div>
-        <a href="{{ url_for('estimate') }}" class="btn btn-primary">Return to Estimate Form</a>
-        {% else %}
-        <h3>Project Details</h3>
-        <div class="card mb-4">
-            <div class="card-body">
-                <h4>Customer Information</h4>
-                <dl class="row">
-                    <dt class="col-sm-3">Name:</dt>
-                    <dd class="col-sm-9">{{ customer.name if customer and customer.name else "N/A" }}</dd>
-                    <dt class="col-sm-3">Phone:</dt>
-                    <dd class="col-sm-9">{{ customer.phone if customer and customer.phone else "N/A" }}</dd>
-                    <dt class="col-sm-3">Email:</dt>
-                    <dd class="col-sm-9">{{ customer.email if customer and customer.email else "N/A" }}</dd>
-                    <dt class="col-sm-3">Address:</dt>
-                    <dd class="col-sm-9">{{ customer.address if customer and customer.address else "N/A" }}</dd>
-                    <dt class="col-sm-3">Project Address:</dt>
-                    <dd class="col-sm-9">{{ customer.project_address if customer and customer.project_address else "N/A" }}</dd>
-                </dl>
-
-                <h4>Notes</h4>
-                <p>{{ project_details.notes }}</p>
-
-
-
-                <h4>Cost Breakdown</h4>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Unit</th>
-                                <th>Quantity</th>
-                                <th>Price/Unit</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in line_items.lines %}
-                            <tr>
-                                <td>{{ item.name }}</td>
-                                <td>{{ item.unit }}</td>
-                                <td>{{ "%.2f"|format(item.quantity) }}</td>
-                                <td>${{ "%.2f"|format(item.price) }}</td>
-                                <td>${{ "%.2f"|format(item.total) }}</td>
-                            </tr>
-                            {% endfor %}
-                            <tr class="table-active">
-                                <td colspan="4" class="text-end"><strong>Total Cost:</strong></td>
-                                <td><strong>${{ "%.2f"|format(total_cost) }}</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <form method="POST" action="{{ url_for('create_proposal') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            {% if project_details is defined and project_details %}
-            <input type="hidden" name="project_details" value='{{ project_details|tojson|safe }}'>
-            {% endif %}
-            {% if total_cost is defined and total_cost %}
-            <input type="hidden" name="total_cost" value="{{ total_cost }}">
-            {% endif %}
-            {% if customer is defined and customer %}
-            <input type="hidden" name="customer" value='{{ customer|tojson|safe }}'>
-            {% endif %}
-            {% if line_items is defined and line_items %}
-            <input type="hidden" name="line_items" value='{{ line_items|tojson|safe }}'>
-            {% endif %}
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-success">Generate Proposal</button>
-                <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Cancel</a>
-            </div>
-        </form>
-    </div>
+    {% endif %}
 </div>
 {% endblock %}
