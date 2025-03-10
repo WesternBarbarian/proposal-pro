@@ -196,6 +196,8 @@ def estimate():
                     customer, project_details = extract_project_data_from_image(temp_path)
                     app.logger.info(f"Customer data extracted: {customer}")
                     app.logger.info(f"Project details extracted: {project_details}")
+                    # Set project_data for consistency with text input flow
+                    project_data = f"Data extracted from image: {file.filename}"
                 except Exception as e:
                     app.logger.error(f"Error extracting data from image: {str(e)}")
                     raise
@@ -219,18 +221,22 @@ def estimate():
                     folder_id = create_folder_if_not_exists('proposal-pro')
                     # Get line items with prices
                     line_items = lookup_prices(project_details, price_list)
+                    app.logger.debug(f"Line items after lookup_prices: {line_items}")
 
                     if folder_id:
                         sheet_id = create_tracking_sheet_if_not_exists(folder_id)
                         if sheet_id:
-                            values = [[form.project_description.data, json.dumps(line_items.dict()), file_info]]
+                            # Use project_data for both file uploads and text input
+                            values = [[project_data, json.dumps(line_items.dict()), file_info]]
                             append_to_sheet(sheet_id, values)
                 except Exception as e:
                     app.logger.error(f"Error tracking form data: {str(e)}")
 
 
             # Get line items with prices
+            app.logger.debug(f"Project details before lookup_prices: {project_details}")
             line_items = lookup_prices(project_details, price_list)
+            app.logger.debug(f"Line items after lookup_prices: {line_items}")
             total_cost = line_items.sub_total
 
             # Convert Line_Items to dictionary for JSON serialization
