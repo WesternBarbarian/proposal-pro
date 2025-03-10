@@ -265,13 +265,15 @@ def estimate():
             app.logger.debug(f"Project details: {project_details}")
             
             # Return the template with all needed variables and form=None to display results
-            return render_template('estimate.html',
+            response = render_template('estimate.html',
                                   project_details=project_details,
                                   total_cost=total_cost,
                                   customer=customer,
                                   line_items=line_items_dict,
                                   authenticated=True,
                                   form=None)  # Explicitly set form to None to prevent form display
+            app.logger.debug(f"Response html length: {len(response)}")
+            return response
         except Exception as e:
             error_msg = str(e)
             logging.error(f"Error processing estimate: {error_msg}")

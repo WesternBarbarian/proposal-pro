@@ -43,13 +43,13 @@
     {% else %}
     <div class="estimate-results">
         <!-- Debug info to help troubleshoot -->
-        <div class="alert alert-info">
+        <div class="alert alert-info d-none">
             Debug: Project details available: {{ project_details is not none }}, 
             Line items available: {{ line_items is not none and line_items.lines|length > 0 }}, 
             Customer available: {{ customer is not none }},
             Form is none: {{ form is none }}
         </div>
-        
+
         {% if not project_details or not line_items or not customer %}
         <div class="alert alert-danger">
             Error: Some required data is missing. Please try again or contact support.
@@ -76,7 +76,7 @@
                 <h4>Notes</h4>
                 <p>{{ project_details.notes }}</p>
 
-            
+
 
                 <h4>Cost Breakdown</h4>
                 <div class="table-responsive">
