@@ -264,16 +264,13 @@ def estimate():
             app.logger.debug(f"Customer data: {customer}")
             app.logger.debug(f"Project details: {project_details}")
             
-            # Return the template with all needed variables and form=None to display results
+            # Return the template with all needed variables without including form at all
             # Log everything to help debug
-            app.logger.debug(f"Form is None: {form is None}")
             app.logger.debug(f"project_details type: {type(project_details)}")
             app.logger.debug(f"customer type: {type(customer)}")
             app.logger.debug(f"line_items_dict type: {type(line_items_dict)}")
             
-            # Force form to None to ensure template shows results
-            form = None
-            
+            # Don't pass form variable at all to template context
             response = render_template('estimate.html',
                                   project_details=project_details,
                                   total_cost=total_cost,
