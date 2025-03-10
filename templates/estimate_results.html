@@ -49,11 +49,11 @@
                 <tbody>
                     {% for item in line_items.lines %}
                     <tr>
-                        <td>{{ item.name }}</td>
-                        <td>{{ item.quantity }}</td>
-                        <td>{{ item.unit }}</td>
-                        <td>${{ "%.2f"|format(item.price) }}</td>
-                        <td>${{ "%.2f"|format(item.total) }}</td>
+                        <td>{{ item['name'] }}</td>
+                        <td>{{ item['quantity'] }}</td>
+                        <td>{{ item['unit'] }}</td>
+                        <td>${{ "%.2f"|format(item['price']) }}</td>
+                        <td>${{ "%.2f"|format(item['total']) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -69,9 +69,9 @@
     
     <form action="{{ url_for('create_proposal') }}" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="project_details" value='{{ project_details|tojson|safe }}'>
-        <input type="hidden" name="line_items" value='{{ line_items|tojson|safe }}'>
-        <input type="hidden" name="customer" value='{{ customer|tojson|safe }}'>
+        <input type="hidden" name="project_details" value="{{ project_details|tojson|safe }}">
+        <input type="hidden" name="line_items" value="{{ line_items|tojson|safe }}">
+        <input type="hidden" name="customer" value="{{ customer|tojson|safe }}">
         <button type="submit" class="btn btn-primary">Generate Proposal</button>
         <a href="{{ url_for('estimate') }}" class="btn btn-secondary">New Estimate</a>
     </form>

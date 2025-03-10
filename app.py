@@ -296,8 +296,23 @@ def estimate_results():
     project_details = estimate_data['project_details']
     total_cost = estimate_data['total_cost']
     customer = estimate_data['customer']
-    line_items = estimate_data['line_items']
-
+    
+    # Convert line items to a simple list of dictionaries to avoid nested object access issues
+    line_items_dict = estimate_data['line_items']
+    line_items = {
+        'lines': [
+            {
+                'name': item['name'],
+                'unit': item['unit'],
+                'price': float(item['price']),
+                'quantity': int(item['quantity']),
+                'total': float(item['total'])
+            } for item in line_items_dict['lines']
+        ]
+    }
+    
+    app.logger.debug(f"Prepared line items for template: {line_items}")
+    
     return render_template('estimate_results.html',
                           project_details=project_details,
                           total_cost=total_cost,
@@ -308,14 +323,27 @@ def estimate_results():
 @app.route('/generate_proposal', methods=['POST'])
 def create_proposal():
     try:
+        app.logger.debug("Creating proposal from form data")
         project_details = json.loads(request.form.get('project_details'))
         line_items_data = json.loads(request.form.get('line_items'))
         customer_data = json.loads(request.form.get('customer'))
+        
+        app.logger.debug(f"Line items data from form: {line_items_data}")
 
-        # Recreate Line_Items object
-        line_items = Line_Items(lines=[
-            Line_Item(**item) for item in line_items_data['lines']
-        ])
+        # Recreate Line_Items object with appropriate type conversions
+        try:
+            line_items = Line_Items(lines=[
+                Line_Item(
+                    name=item['name'],
+                    unit=item['unit'],
+                    price=float(item['price']),
+                    quantity=int(item['quantity'])
+                ) for item in line_items_data['lines']
+            ])
+            app.logger.debug(f"Successfully recreated Line_Items object: {line_items}")
+        except Exception as e:
+            app.logger.error(f"Error recreating Line_Items: {str(e)}")
+            raise
 
         templates, _ = load_templates()
         if isinstance(templates, list):
@@ -331,8 +359,8 @@ def create_proposal():
                             customer=customer_data,
                             authenticated=True)
     except Exception as e:
-        logging.error(f"Error generating proposal: {str(e)}")
-        flash('Error generating proposal. Please try again.', 'error')
+        logging.error(f"Error generating proposal: {str(e)}", exc_info=True)
+        flash(f'Error generating proposal: {str(e)}. Please try again.', 'error')
         return redirect(url_for('estimate'))
 
 @app.route('/save_proposal', methods=['POST'])
