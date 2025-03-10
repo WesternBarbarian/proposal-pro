@@ -4,8 +4,8 @@
 {% block content %}
 <div class="estimate-form">
     <h2>Project Estimate</h2>
-
-    {% if line_items is defined and line_items and line_items.lines|length > 0 %}
+    
+    {% if line_items and line_items.lines %}
     <!-- RESULTS SECTION -->
     <div class="estimate-results">
         <h3>Project Details</h3>
@@ -72,7 +72,6 @@
             </div>
         </form>
     </div>
-
     {% else %}
     <!-- INPUT FORM SECTION -->
     <form method="POST" action="{{ url_for('estimate') }}" class="needs-validation" enctype="multipart/form-data" onsubmit="return handleFileSubmit(event)">
