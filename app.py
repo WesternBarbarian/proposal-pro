@@ -1,7 +1,7 @@
 import os
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # Allow OAuth over HTTP for development
 from flask import Flask, render_template, request, flash, redirect, url_for, make_response, session
@@ -36,10 +36,11 @@ app = Flask(__name__)
 app.logger.setLevel(logging.DEBUG)
 # Configure session to use filesystem (Replit resets in-memory sessions)
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_PERMANENT'] = True  # Make sessions persistent
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=1)  # Sessions last for 1 day
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'flask_'
-app.config['SECRET_KEY'] = os.environ.get("SESSION_SECRET", "fallback_secret")
+app.config['SECRET_KEY'] = os.environ.get("SESSION_SECRET", "fallback_secret_key_for_development")
 app.config['WTF_CSRF_SECRET_KEY'] = app.config['SECRET_KEY']
 
 # Initialize Session
@@ -310,6 +311,7 @@ def estimate_results():
                           authenticated=True)
 
 @app.route('/generate_proposal', methods=['POST'])
+@require_auth
 def create_proposal():
     try:
         app.logger.debug("Creating proposal from form data")
@@ -353,6 +355,7 @@ def create_proposal():
         return redirect(url_for('estimate'))
 
 @app.route('/save_proposal', methods=['POST'])
+@require_auth
 def save_proposal():
     try:
         edited_proposal = request.form.get('edited_proposal')
