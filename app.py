@@ -175,127 +175,135 @@ def logout():
     return redirect('/')
 
 
-@app.route('/estimate', methods=['GET', 'POST'])
+@app.route('/estimate', methods=['GET'])
 @require_auth
 def estimate():
     form = ProjectForm()
-    if request.method == 'POST':
-        try:
-            file_info = "No file uploaded"
-            project_data = ""
-            customer = None
-            project_details = None
+    return render_template('estimate.html', form=form, authenticated=True)
 
-            # STEP 1: Extract project data (either from image or text)
-            if request.files and 'file' in request.files and request.files['file'].filename:
-                file = request.files['file']
-                file_info = f"File upload: {file.filename}"
-                app.logger.info(f"Processing uploaded file: {file.filename}")
-                # Save file temporarily
-                temp_path = f"temp_{file.filename}"
-                file.save(temp_path)
-                try:
-                    app.logger.info(f"Extracting data from image at {temp_path}")
-                    customer, project_details = extract_project_data_from_image(temp_path)
-                    app.logger.info(f"Customer data extracted: {customer}")
-                    app.logger.info(f"Project details extracted: {project_details}")
-                    # Set project_data for consistency with text input flow
-                    project_data = f"Data extracted from image: {file.filename}"
-                    app.logger.debug(f"Project data from image: {project_data}")
-                except Exception as e:
-                    app.logger.error(f"Error extracting data from image: {str(e)}")
-                    raise
-                finally:
-                    # Clean up temporary file
-                    if os.path.exists(temp_path):
-                        os.remove(temp_path)
-                        app.logger.info(f"Temporary file {temp_path} removed")
-            elif request.form.get('project_description'):
-                project_data = request.form.get('project_description')
-                if not project_data:
-                    flash('Please provide either a file or project description.', 'error')
-                    return redirect(url_for('estimate'))
-                customer, project_details = extract_project_data(project_data)
-            else:
+@app.route('/process_estimate', methods=['POST'])
+@require_auth
+def process_estimate():
+    form = ProjectForm()
+    try:
+        file_info = "No file uploaded"
+        project_data = ""
+        customer = None
+        project_details = None
+
+        # STEP 1: Extract project data (either from image or text)
+        if request.files and 'file' in request.files and request.files['file'].filename:
+            file = request.files['file']
+            file_info = f"File upload: {file.filename}"
+            app.logger.info(f"Processing uploaded file: {file.filename}")
+            # Save file temporarily
+            temp_path = f"temp_{file.filename}"
+            file.save(temp_path)
+            try:
+                app.logger.info(f"Extracting data from image at {temp_path}")
+                customer, project_details = extract_project_data_from_image(temp_path)
+                app.logger.info(f"Customer data extracted: {customer}")
+                app.logger.info(f"Project details extracted: {project_details}")
+                # Set project_data for consistency with text input flow
+                project_data = f"Data extracted from image: {file.filename}"
+                app.logger.debug(f"Project data from image: {project_data}")
+            except Exception as e:
+                app.logger.error(f"Error extracting data from image: {str(e)}")
+                raise
+            finally:
+                # Clean up temporary file
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                    app.logger.info(f"Temporary file {temp_path} removed")
+        elif request.form.get('project_description'):
+            project_data = request.form.get('project_description')
+            if not project_data:
                 flash('Please provide either a file or project description.', 'error')
                 return redirect(url_for('estimate'))
-            
-            # STEP 2: Process the extracted data (common workflow for both paths)
-            if not customer or not project_details:
-                flash('Failed to extract project details. Please try again.', 'error')
-                return redirect(url_for('estimate'))
-                
-            app.logger.debug(f"Project details extracted: {project_details}")
-            app.logger.debug(f"Customer data extracted: {customer}")
-            
-            # STEP 3: Load price list and calculate costs
-            price_list = load_price_list()
-
-            # Track form data in Google Sheet if user is authenticated
-            if 'credentials' in session:
-                try:
-                    folder_id = create_folder_if_not_exists('proposal-pro')
-                    # Get line items with prices
-                    line_items = lookup_prices(project_details, price_list)
-                    app.logger.debug(f"Line items after lookup_prices: {line_items}")
-
-                    if folder_id:
-                        sheet_id = create_tracking_sheet_if_not_exists(folder_id)
-                        if sheet_id:
-                            # Use project_data for both file uploads and text input
-                            values = [[project_data, json.dumps(line_items.dict()), file_info]]
-                            append_to_sheet(sheet_id, values)
-                except Exception as e:
-                    app.logger.error(f"Error tracking form data: {str(e)}")
-
-            # STEP 4: Calculate line items and totals
-            app.logger.debug(f"Project details before lookup_prices: {project_details}")
-            line_items = lookup_prices(project_details, price_list)
-            app.logger.debug(f"Line items after lookup_prices: {line_items}")
-            total_cost = line_items.sub_total
-            app.logger.debug(f"Total cost calculated: {total_cost}")
-
-            # Convert Line_Items to dictionary for JSON serialization
-            line_items_dict = line_items.dict()
-            app.logger.debug(f"Converted line items to dict: {line_items_dict}")
-
-            # STEP 5: Render the results
-            app.logger.debug(f"Rendering template with results. Line items count: {len(line_items_dict['lines'])}")
-            app.logger.debug(f"Customer data: {customer}")
-            app.logger.debug(f"Project details: {project_details}")
-            
-            # Return the template with all needed variables without including form at all
-            # Log everything to help debug
-            app.logger.debug(f"project_details type: {type(project_details)}")
-            app.logger.debug(f"customer type: {type(customer)}")
-            app.logger.debug(f"line_items_dict type: {type(line_items_dict)}")
-            
-            # Always include the form object for template rendering regardless of input method
-            # Use an explicit flag to control which section to show
-            return render_template('estimate.html',
-                                  form=form,  # Always pass form even if it wasn't used for input
-                                  project_details=project_details,
-                                  total_cost=total_cost,
-                                  customer=customer,
-                                  line_items=line_items_dict,
-                                  authenticated=True,
-                                  show_results=True)  # Explicit flag to show results section
-        except Exception as e:
-            error_msg = str(e)
-            logging.error(f"Error processing estimate: {error_msg}", exc_info=True)
-
-            if "429 RESOURCE_EXHAUSTED" in error_msg:
-                flash('The AI service is currently at capacity. Please wait a few minutes and try again.', 'error')
-            elif "Request payload size exceeds the limit" in error_msg:
-                flash('The uploaded file is too large. Please reduce the file size or use a smaller file.', 'error')
-            else:
-                flash(f'Error processing your request: {error_msg}. Please try again.', 'error')
+            customer, project_details = extract_project_data(project_data)
+        else:
+            flash('Please provide either a file or project description.', 'error')
             return redirect(url_for('estimate'))
 
-    # Make sure show_results is explicitly set to False for GET requests
-    return render_template('estimate.html', form=form, authenticated=True, show_results=False)
+        # STEP 2: Process the extracted data (common workflow for both paths)
+        if not customer or not project_details:
+            flash('Failed to extract project details. Please try again.', 'error')
+            return redirect(url_for('estimate'))
 
-    return render_template('estimate.html', form=form, authenticated=True)
+        app.logger.debug(f"Project details extracted: {project_details}")
+        app.logger.debug(f"Customer data extracted: {customer}")
+
+        # STEP 3: Load price list and calculate costs
+        price_list = load_price_list()
+
+        # Track form data in Google Sheet if user is authenticated
+        if 'credentials' in session:
+            try:
+                folder_id = create_folder_if_not_exists('proposal-pro')
+                # Get line items with prices
+                line_items = lookup_prices(project_details, price_list)
+                app.logger.debug(f"Line items after lookup_prices: {line_items}")
+
+                if folder_id:
+                    sheet_id = create_tracking_sheet_if_not_exists(folder_id)
+                    if sheet_id:
+                        # Use project_data for both file uploads and text input
+                        values = [[project_data, json.dumps(line_items.dict()), file_info]]
+                        append_to_sheet(sheet_id, values)
+            except Exception as e:
+                app.logger.error(f"Error tracking form data: {str(e)}")
+
+        # STEP 4: Calculate line items and totals
+        app.logger.debug(f"Project details before lookup_prices: {project_details}")
+        line_items = lookup_prices(project_details, price_list)
+        app.logger.debug(f"Line items after lookup_prices: {line_items}")
+        total_cost = line_items.sub_total
+        app.logger.debug(f"Total cost calculated: {total_cost}")
+
+        # Convert Line_Items to dictionary for JSON serialization
+        line_items_dict = line_items.dict()
+        app.logger.debug(f"Converted line items to dict: {line_items_dict}")
+
+        # STEP 5: Redirect to results page with data in session
+        session['estimate_data'] = {
+            'project_details': project_details,
+            'total_cost': total_cost,
+            'customer': customer,
+            'line_items': line_items_dict
+        }
+
+        return redirect(url_for('estimate_results'))
+    except Exception as e:
+        error_msg = str(e)
+        logging.error(f"Error processing estimate: {error_msg}", exc_info=True)
+
+        if "429 RESOURCE_EXHAUSTED" in error_msg:
+            flash('The AI service is currently at capacity. Please wait a few minutes and try again.', 'error')
+        elif "Request payload size exceeds the limit" in error_msg:
+            flash('The uploaded file is too large. Please reduce the file size or use a smaller file.', 'error')
+        else:
+            flash(f'Error processing your request: {error_msg}. Please try again.', 'error')
+        return redirect(url_for('estimate'))
+
+@app.route('/estimate_results')
+@require_auth
+def estimate_results():
+    estimate_data = session.get('estimate_data')
+    if not estimate_data:
+        flash('No estimate data found. Please create a new estimate.', 'error')
+        return redirect(url_for('estimate'))
+
+    project_details = estimate_data['project_details']
+    total_cost = estimate_data['total_cost']
+    customer = estimate_data['customer']
+    line_items = estimate_data['line_items']
+
+    return render_template('estimate_results.html',
+                          project_details=project_details,
+                          total_cost=total_cost,
+                          customer=customer,
+                          line_items=line_items,
+                          authenticated=True)
 
 @app.route('/generate_proposal', methods=['POST'])
 def create_proposal():

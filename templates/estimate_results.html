@@ -1,0 +1,71 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="estimate-results">
+    <h2>Project Estimate Results</h2>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h4>Customer Information</h4>
+            <dl class="row">
+                <dt class="col-sm-3">Name:</dt>
+                <dd class="col-sm-9">{{ customer.name if customer and customer.name else "N/A" }}</dd>
+                <dt class="col-sm-3">Phone:</dt>
+                <dd class="col-sm-9">{{ customer.phone if customer and customer.phone else "N/A" }}</dd>
+                <dt class="col-sm-3">Email:</dt>
+                <dd class="col-sm-9">{{ customer.email if customer and customer.email else "N/A" }}</dd>
+                <dt class="col-sm-3">Address:</dt>
+                <dd class="col-sm-9">{{ customer.address if customer and customer.address else "N/A" }}</dd>
+                <dt class="col-sm-3">Project Address:</dt>
+                <dd class="col-sm-9">{{ customer.project_address if customer and customer.project_address else "N/A" }}</dd>
+            </dl>
+
+            <h4>Notes</h4>
+            <p>{{ project_details.notes }}</p>
+
+            <h4>Cost Breakdown</h4>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Unit</th>
+                            <th>Quantity</th>
+                            <th>Price/Unit</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in line_items.lines %}
+                        <tr>
+                            <td>{{ item.name }}</td>
+                            <td>{{ item.unit }}</td>
+                            <td>{{ "%.2f"|format(item.quantity) }}</td>
+                            <td>${{ "%.2f"|format(item.price) }}</td>
+                            <td>${{ "%.2f"|format(item.total) }}</td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="table-active">
+                            <td colspan="4" class="text-end"><strong>Total Cost:</strong></td>
+                            <td><strong>${{ "%.2f"|format(total_cost) }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('create_proposal') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" name="project_details" value='{{ project_details|tojson|safe }}'>
+        <input type="hidden" name="total_cost" value="{{ total_cost }}">
+        <input type="hidden" name="customer" value='{{ customer|tojson|safe }}'>
+        <input type="hidden" name="line_items" value='{{ line_items|tojson|safe }}'>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success">Generate Proposal</button>
+            <a href="{{ url_for('estimate') }}" class="btn btn-secondary">Start New Estimate</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
