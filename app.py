@@ -297,21 +297,10 @@ def estimate_results():
     total_cost = estimate_data['total_cost']
     customer = estimate_data['customer']
     
-    # Convert line items to a simple list of dictionaries to avoid nested object access issues
-    line_items_dict = estimate_data['line_items']
-    line_items = {
-        'lines': [
-            {
-                'name': item['name'],
-                'unit': item['unit'],
-                'price': float(item['price']),
-                'quantity': int(item['quantity']),
-                'total': float(item['total'])
-            } for item in line_items_dict['lines']
-        ]
-    }
+    # Use line items directly from session data
+    line_items = estimate_data['line_items']
     
-    app.logger.debug(f"Prepared line items for template: {line_items}")
+    app.logger.debug(f"Using line items directly from session: {line_items}")
     
     return render_template('estimate_results.html',
                           project_details=project_details,
