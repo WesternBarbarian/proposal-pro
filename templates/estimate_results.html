@@ -69,9 +69,9 @@
     
     <form action="{{ url_for('create_proposal') }}" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <input type="hidden" name="project_details" value="{{ project_details|tojson|safe }}">
-        <input type="hidden" name="line_items" value="{{ line_items|tojson|safe }}">
-        <input type="hidden" name="customer" value="{{ customer|tojson|safe }}">
+        <input type="hidden" name="project_details" value='{{ project_details|tojson }}'>
+        <input type="hidden" name="line_items" value='{{ line_items|tojson }}'>
+        <input type="hidden" name="customer" value='{{ customer|tojson }}'>
         <button type="submit" class="btn btn-primary">Generate Proposal</button>
         <a href="{{ url_for('estimate') }}" class="btn btn-secondary">New Estimate</a>
     </form>
