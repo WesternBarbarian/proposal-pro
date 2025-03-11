@@ -98,50 +98,61 @@ def is_user_allowed(email):
             any(email.endswith('@' + domain) for domain in ALLOWED_DOMAINS))
 
 def require_auth(f):
+    """Simplified authentication decorator that validates users once per session.
+    
+    Instead of making API calls on every request, it only validates a user once
+    when they first log in, then stores the verification in the session.
+    """
     from functools import wraps
     @wraps(f)
     def decorated(*args, **kwargs):
-        # Just check if credentials exist in session, skip API calls
+        # Check if we're already authenticated
+        if session.get('auth_verified'):
+            # Return the function directly without any additional verification
+            return f(*args, **kwargs)
+        
+        # Check if we have credentials
         credentials = session.get('credentials')
         if not credentials:
+            # No credentials, redirect to login
             return redirect(url_for('login'))
         
-        # If email was already verified before, skip verification
-        if session.get('auth_verified'):
-            return f(*args, **kwargs)
+        # Only verify email once per session
+        try:
+            # Get user info from Google
+            response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
+                headers={'Authorization': f'Bearer {credentials["token"]}'})
             
-        # First time verification only
-        if session.get('verify_count', 0) == 0:
-            try:
-                response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
-                    headers={'Authorization': f'Bearer {credentials["token"]}'})
-                if response.status_code == 401:
-                    session.clear()
-                    return redirect(url_for('login'))
-                user_info = response.json()
-                email = user_info.get('email')
-                if not email or not is_user_allowed(email):
-                    session.clear()
-                    flash('Access denied. You are not authorized.', 'error')
-                    return redirect(url_for('index'))
-                
-                # Store verification status and email
-                session['auth_verified'] = True
-                session['user_email'] = email
-                session['verify_count'] = 1
-                session.modified = True
-                
-            except Exception as e:
-                app.logger.error(f"Auth error: {str(e)}")
+            # Check if token is valid
+            if response.status_code != 200:
                 session.clear()
+                flash('Authentication expired. Please login again.', 'error')
                 return redirect(url_for('login'))
-        else:
-            # Increment verification count to track usage
-            count = session.get('verify_count', 0)
-            session['verify_count'] = count + 1
+            
+            # Get email and check if user is allowed
+            user_info = response.json()
+            email = user_info.get('email')
+            
+            if not email or not is_user_allowed(email):
+                session.clear()
+                flash('Access denied. You are not authorized.', 'error')
+                return redirect(url_for('index'))
+            
+            # Mark as verified for the rest of the session
+            session['auth_verified'] = True
+            session['user_email'] = email
             session.modified = True
             
-        return f(*args, **kwargs)
+            # Continue to the original function
+            return f(*args, **kwargs)
+            
+        except Exception as e:
+            # Handle any exceptions during verification
+            app.logger.error(f"Authentication error: {str(e)}", exc_info=True)
+            session.clear()
+            flash('Authentication error. Please try again.', 'error')
+            return redirect(url_for('login'))
+            
     return decorated
 
 @app.route('/')
@@ -191,133 +202,90 @@ def estimate():
 @app.route('/process_estimate', methods=['POST'])
 @require_auth
 def process_estimate():
-    form = ProjectForm()
     try:
-        file_info = "No file uploaded"
-        project_data = ""
-        customer = None
-        project_details = None
-
-        # STEP 1: Extract project data (either from image or text)
-        if request.files and 'file' in request.files and request.files['file'].filename:
+        # Simple extraction from form data
+        if request.files.get('file') and request.files['file'].filename:
+            # Handle file upload
             file = request.files['file']
-            file_info = f"File upload: {file.filename}"
-            app.logger.info(f"Processing uploaded file: {file.filename}")
-            # Save file temporarily
             temp_path = f"temp_{file.filename}"
             file.save(temp_path)
             try:
-                app.logger.info(f"Extracting data from image at {temp_path}")
                 customer, project_details = extract_project_data_from_image(temp_path)
-                app.logger.info(f"Customer data extracted: {customer}")
-                app.logger.info(f"Project details extracted: {project_details}")
-                # Set project_data for consistency with text input flow
-                project_data = f"Data extracted from image: {file.filename}"
-                app.logger.debug(f"Project data from image: {project_data}")
-            except Exception as e:
-                app.logger.error(f"Error extracting data from image: {str(e)}")
-                raise
             finally:
-                # Clean up temporary file
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
-                    app.logger.info(f"Temporary file {temp_path} removed")
         elif request.form.get('project_description'):
+            # Handle text input
             project_data = request.form.get('project_description')
-            if not project_data:
-                flash('Please provide either a file or project description.', 'error')
-                return redirect(url_for('estimate'))
             customer, project_details = extract_project_data(project_data)
         else:
             flash('Please provide either a file or project description.', 'error')
             return redirect(url_for('estimate'))
 
-        # STEP 2: Process the extracted data (common workflow for both paths)
+        # Validate extracted data
         if not customer or not project_details:
             flash('Failed to extract project details. Please try again.', 'error')
             return redirect(url_for('estimate'))
 
-        app.logger.debug(f"Project details extracted: {project_details}")
-        app.logger.debug(f"Customer data extracted: {customer}")
-
-        # STEP 3: Load price list and calculate costs
+        # Price calculation
         price_list = load_price_list()
-
-        # Track form data in Google Sheet if user is authenticated
-        if 'credentials' in session:
-            try:
-                folder_id = create_folder_if_not_exists('proposal-pro')
-                # Get line items with prices
-                line_items = lookup_prices(project_details, price_list)
-                app.logger.debug(f"Line items after lookup_prices: {line_items}")
-
-                if folder_id:
-                    sheet_id = create_tracking_sheet_if_not_exists(folder_id)
-                    if sheet_id:
-                        # Use project_data for both file uploads and text input
-                        values = [[project_data, json.dumps(line_items.dict()), file_info]]
-                        append_to_sheet(sheet_id, values)
-            except Exception as e:
-                app.logger.error(f"Error tracking form data: {str(e)}")
-
-        # STEP 4: Calculate line items and totals
-        app.logger.debug(f"Project details before lookup_prices: {project_details}")
         line_items = lookup_prices(project_details, price_list)
-        app.logger.debug(f"Line items after lookup_prices: {line_items}")
         total_cost = line_items.sub_total
-        app.logger.debug(f"Total cost calculated: {total_cost}")
-
-        # Convert Line_Items to dictionary for JSON serialization
         line_items_dict = line_items.dict()
-        app.logger.debug(f"Converted line items to dict: {line_items_dict}")
 
-        # STEP 5: Simply store data in session and redirect
-        session['estimate_data'] = {
+        # Store data in global variable AND session
+        estimate_result = {
             'project_details': project_details,
-            'total_cost': total_cost,
             'customer': customer,
-            'line_items': line_items_dict
+            'line_items': line_items_dict,
+            'total_cost': total_cost
         }
         
-        # Force session to save
+        # Use both session and global variable
+        app.config['CURRENT_ESTIMATE'] = estimate_result
+        session['estimate_data'] = estimate_result
         session.modified = True
         
-        # Redirect to results page
+        # Make session permanent to avoid timeout
+        session.permanent = True
+        
+        # Debug log the session state
+        app.logger.debug(f"Session data set: {session.get('estimate_data')}")
+        app.logger.debug(f"App config: {app.config.get('CURRENT_ESTIMATE') is not None}")
+        
+        # Redirect to results
         return redirect(url_for('estimate_results'))
+        
     except Exception as e:
         error_msg = str(e)
-        logging.error(f"Error processing estimate: {error_msg}", exc_info=True)
-
-        if "429 RESOURCE_EXHAUSTED" in error_msg:
-            flash('The AI service is currently at capacity. Please wait a few minutes and try again.', 'error')
-        elif "Request payload size exceeds the limit" in error_msg:
-            flash('The uploaded file is too large. Please reduce the file size or use a smaller file.', 'error')
-        else:
-            flash(f'Error processing your request: {error_msg}. Please try again.', 'error')
+        app.logger.error(f"Error processing estimate: {error_msg}", exc_info=True)
+        flash(f'Error processing request: {error_msg}', 'error')
         return redirect(url_for('estimate'))
 
 @app.route('/estimate_results')
 @require_auth
 def estimate_results():
-    # Simply get data from session
+    # Try to get data from session first
     estimate_data = session.get('estimate_data')
     
-    # If no data, redirect to create a new estimate
+    # If not in session, try to get from app config
+    if not estimate_data:
+        estimate_data = app.config.get('CURRENT_ESTIMATE')
+        
+    # If still no data, redirect
     if not estimate_data:
         flash('No estimate data found. Please create a new estimate.', 'error')
         return redirect(url_for('estimate'))
-
-    # Extract data from session
-    project_details = estimate_data['project_details']
-    total_cost = estimate_data['total_cost']
-    customer = estimate_data['customer']
-    line_items = estimate_data['line_items']
     
+    # Log what we found
+    app.logger.debug(f"Using estimate data: {estimate_data}")
+    
+    # Render template with data
     return render_template('estimate_results.html',
-                          project_details=project_details,
-                          total_cost=total_cost,
-                          customer=customer,
-                          line_items=line_items,
+                          project_details=estimate_data['project_details'],
+                          total_cost=estimate_data['total_cost'],
+                          customer=estimate_data['customer'],
+                          line_items=estimate_data['line_items'],
                           authenticated=True)
 
 @app.route('/generate_proposal', methods=['POST'])
@@ -325,18 +293,41 @@ def estimate_results():
 def create_proposal():
     try:
         # Get data from form
-        project_details = json.loads(request.form.get('project_details'))
-        line_items_data = json.loads(request.form.get('line_items'))
-        customer_data = json.loads(request.form.get('customer'))
+        project_details = json.loads(request.form.get('project_details', '{}'))
+        line_items_data = json.loads(request.form.get('line_items', '{"lines":[]}'))
+        customer_data = json.loads(request.form.get('customer', '{}'))
         
+        # Validate data
+        if not project_details or not line_items_data or not customer_data:
+            # Try to get data from session
+            estimate_data = session.get('estimate_data')
+            if estimate_data:
+                project_details = estimate_data.get('project_details', {})
+                customer_data = estimate_data.get('customer', {})
+                line_items_data = estimate_data.get('line_items', {'lines': []})
+            
+            # If still no data, try app config
+            if not project_details or not line_items_data or not customer_data:
+                estimate_data = app.config.get('CURRENT_ESTIMATE')
+                if estimate_data:
+                    project_details = estimate_data.get('project_details', {})
+                    customer_data = estimate_data.get('customer', {})
+                    line_items_data = estimate_data.get('line_items', {'lines': []})
+        
+        # If we still don't have data, redirect back
+        if not project_details or not line_items_data or not customer_data:
+            flash('No project data found. Please create an estimate first.', 'error')
+            return redirect(url_for('estimate'))
+            
         # Convert line items to proper object
+        lines = line_items_data.get('lines', [])
         line_items = Line_Items(lines=[
             Line_Item(
-                name=item['name'],
-                unit=item['unit'],
-                price=float(item['price']),
-                quantity=int(item['quantity'])
-            ) for item in line_items_data['lines']
+                name=item.get('name', 'Unknown'),
+                unit=item.get('unit', 'ea'),
+                price=float(item.get('price', 0)),
+                quantity=int(item.get('quantity', 0))
+            ) for item in lines
         ])
         
         # Get templates
@@ -348,6 +339,18 @@ def create_proposal():
             
         # Generate proposal
         proposal = generate_proposal(project_details, customer_data, line_items, templates)
+        
+        # Keep data in session for next steps
+        app.config['CURRENT_PROPOSAL'] = {
+            'proposal': proposal,
+            'customer': customer_data
+        }
+        
+        session['proposal_data'] = {
+            'proposal': proposal,
+            'customer': customer_data
+        }
+        session.modified = True
         
         return render_template('proposal.html', 
                             proposal=proposal,
