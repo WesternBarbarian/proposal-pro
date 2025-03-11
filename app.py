@@ -101,25 +101,46 @@ def require_auth(f):
     from functools import wraps
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Just check if credentials exist in session, skip API calls
         credentials = session.get('credentials')
         if not credentials:
             return redirect(url_for('login'))
-        try:
-            response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
-                headers={'Authorization': f'Bearer {credentials["token"]}'})
-            if response.status_code == 401:
+        
+        # If email was already verified before, skip verification
+        if session.get('auth_verified'):
+            return f(*args, **kwargs)
+            
+        # First time verification only
+        if session.get('verify_count', 0) == 0:
+            try:
+                response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
+                    headers={'Authorization': f'Bearer {credentials["token"]}'})
+                if response.status_code == 401:
+                    session.clear()
+                    return redirect(url_for('login'))
+                user_info = response.json()
+                email = user_info.get('email')
+                if not email or not is_user_allowed(email):
+                    session.clear()
+                    flash('Access denied. You are not authorized.', 'error')
+                    return redirect(url_for('index'))
+                
+                # Store verification status and email
+                session['auth_verified'] = True
+                session['user_email'] = email
+                session['verify_count'] = 1
+                session.modified = True
+                
+            except Exception as e:
+                app.logger.error(f"Auth error: {str(e)}")
                 session.clear()
                 return redirect(url_for('login'))
-            user_info = response.json()
-            email = user_info.get('email')
-            if not email or not is_user_allowed(email):
-                session.clear()
-                flash('Access denied. You are not authorized.', 'error')
-                return redirect(url_for('index'))
-        except Exception as e:
-            app.logger.error(f"Auth error: {str(e)}")
-            session.clear()
-            return redirect(url_for('login'))
+        else:
+            # Increment verification count to track usage
+            count = session.get('verify_count', 0)
+            session['verify_count'] = count + 1
+            session.modified = True
+            
         return f(*args, **kwargs)
     return decorated
 
@@ -554,9 +575,8 @@ def update_price():
 @require_auth
 def proposal_templates():
     templates, using_custom = load_templates()
-    response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo',
-        headers={'Authorization': f'Bearer {session["credentials"]["token"]}'})
-    authenticated = response.status_code == 200
+    # We're already authenticated by the @require_auth decorator
+    authenticated = True
     return render_template('proposal_templates.html', 
                          templates=templates, 
                          using_custom=using_custom,
