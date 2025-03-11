@@ -18,6 +18,12 @@ def create_oauth_flow(request_url=None):
     flow = Flow.from_client_config(client_secrets, scopes=SCOPES)
     if request_url:
         # Get the base URL from the request
-        base_url = "https://e0195ec9-bbd4-4786-9209-a61c7380599c-00-3u1qtz4pwrw1h.riker.replit.dev"
+        if "://" in request_url:
+            # Extract base URL from the full URL (remove path components)
+            parts = request_url.split("/")
+            base_url = "/".join(parts[:3])  # Keep scheme + hostname + port
+        else:
+            # Fallback to a known URL format
+            base_url = f"https://{os.environ.get('REPL_SLUG', 'app')}.{os.environ.get('REPL_OWNER', 'repl')}.repl.co"
         flow.redirect_uri = f"{base_url}/oauth2callback"
     return flow

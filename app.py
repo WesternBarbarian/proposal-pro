@@ -167,29 +167,71 @@ def index():
 
 @app.route('/login')
 def login():
+    # Clear any existing session data
+    session.clear()
+    
+    # Create a new OAuth flow
     flow = create_oauth_flow(request.base_url)
-    authorization_url, state = flow.authorization_url()
+    authorization_url, state = flow.authorization_url(
+        # Enable offline access to get refresh token
+        access_type='offline',
+        # Force approval screen to get a refresh token every time
+        prompt='consent'
+    )
+    
+    # Store state in session and make session permanent
     session['state'] = state
+    session.permanent = True
+    
+    # Log what we're doing
+    app.logger.info(f"Starting login process, redirecting to: {authorization_url}")
+    
     return redirect(authorization_url)
 
 @app.route('/oauth2callback')
 def oauth2callback():
-    flow = create_oauth_flow(request.base_url)
-    flow.fetch_token(authorization_response=request.url)
-    credentials = flow.credentials
-    session['credentials'] = {
-        'token': credentials.token,
-        'refresh_token': credentials.refresh_token,
-        'token_uri': credentials.token_uri,
-        'client_id': credentials.client_id,
-        'client_secret': credentials.client_secret,
-        'scopes': credentials.scopes
-    }
-    return redirect('/')
+    try:
+        # Create a new OAuth flow
+        flow = create_oauth_flow(request.base_url)
+        
+        # Fetch token using authorization response
+        flow.fetch_token(authorization_response=request.url)
+        
+        # Get credentials
+        credentials = flow.credentials
+        
+        # Store credentials in session
+        session['credentials'] = {
+            'token': credentials.token,
+            'refresh_token': credentials.refresh_token,
+            'token_uri': credentials.token_uri,
+            'client_id': credentials.client_id,
+            'client_secret': credentials.client_secret,
+            'scopes': credentials.scopes
+        }
+        
+        # Make sure session is permanent
+        session.permanent = True
+        session.modified = True
+        
+        # Reset auth_verified flag to force verification on next protected route
+        session.pop('auth_verified', None)
+        
+        app.logger.info(f"OAuth callback successful, credentials stored in session")
+        
+        return redirect('/')
+        
+    except Exception as e:
+        # Log the error
+        app.logger.error(f"OAuth callback error: {str(e)}", exc_info=True)
+        flash("Authentication failed. Please try again.", "error")
+        return redirect('/')
 
 @app.route('/logout')
 def logout():
-    session.pop('credentials', None)
+    # Clear the entire session
+    session.clear()
+    flash("You have been logged out successfully.", "success")
     return redirect('/')
 
 
