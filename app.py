@@ -13,6 +13,7 @@ import markdown2
 from flask_wtf import FlaskForm, CSRFProtect
 from wtforms import TextAreaField, SubmitField
 from wtforms.validators import DataRequired
+from flask_wtf.file import FileField, FileAllowed
 from ai_helper import (
     extract_project_data, 
     extract_project_data_from_image, 
@@ -56,13 +57,13 @@ app.jinja_env.filters['markdown'] = lambda text: Markup(markdown.convert(text))
 csrf = CSRFProtect()
 csrf.init_app(app)
 
-from flask_wtf.file import FileField, FileAllowed
+
 class ProjectForm(FlaskForm):
     project_description = TextAreaField('Project Description')
     file = FileField('Upload File', validators=[
         FileAllowed(['pdf', 'png', 'jpg', 'jpeg', 'heic'], 'Only PDF, PNG, JPEG, and HEIC files allowed!')
     ])
-    submit = SubmitField('Generate Estimate')
+    submit_button = SubmitField('Generate Estimate')
 
 class PriceListForm(FlaskForm):
     price_description = TextAreaField('Price Description')
