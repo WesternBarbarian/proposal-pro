@@ -72,9 +72,6 @@
         <input type="hidden" name="project_details" value="{{ project_details|tojson|safe }}">
         <input type="hidden" name="line_items" value="{{ line_items|tojson|safe }}">
         <input type="hidden" name="customer" value="{{ customer|tojson|safe }}">
-        {% if estimate_id %}
-        <input type="hidden" name="estimate_id" value="{{ estimate_id }}">
-        {% endif %}
         <button type="submit" class="btn btn-primary">Generate Proposal</button>
         <a href="{{ url_for('estimate') }}" class="btn btn-secondary">New Estimate</a>
     </form>
