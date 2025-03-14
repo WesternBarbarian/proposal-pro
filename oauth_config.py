@@ -17,11 +17,13 @@ def create_oauth_flow(request_url=None):
     client_secrets = json.loads(os.getenv("GOOGLE_OAUTH_SECRETS"))
     flow = Flow.from_client_config(client_secrets, scopes=SCOPES)
     if request_url:
-        # Get the base URL from the request
+        # Get the base URL from the request and ensure HTTPS
         if "://" in request_url:
             # Extract base URL from the full URL (remove path components)
             parts = request_url.split("/")
             base_url = "/".join(parts[:3])  # Keep scheme + hostname + port
+            # Ensure HTTPS is used (Google requires HTTPS for OAuth)
+            base_url = base_url.replace("http://", "https://")
         else:
             # Fallback to a known URL format
             base_url = f"https://{os.environ.get('REPL_SLUG', 'app')}.{os.environ.get('REPL_OWNER', 'repl')}.repl.co"
