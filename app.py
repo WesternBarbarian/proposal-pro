@@ -5,6 +5,9 @@ import time
 import glob
 from datetime import timedelta
 
+# Allow OAuth over HTTP for development (crucial for OAuth to work in dev environment)
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
 from flask import Flask, render_template, session, flash, redirect, url_for
 from flask_session import Session
 from markupsafe import Markup
