@@ -804,5 +804,38 @@ def is_admin_user(email):
     admin_emails = ['jason.matthews@cyborguprising.com']
     return email in admin_emails
 
+# Utility route for testing session cleanup without admin authentication
+@app.route('/util/cleanup-sessions/<action>')
+def util_cleanup_sessions(action):
+    """Utility route for testing session cleanup.
+    
+    This is a temporary development route that should be disabled in production.
+    """
+    try:
+        if action == 'status':
+            # Get session file stats
+            session_files = glob.glob(f"{SESSION_DIR}/*")
+            count = len(session_files)
+            size_bytes = sum(os.path.getsize(f) for f in session_files) if session_files else 0
+            size_kb = size_bytes / 1024
+            
+            return f"Session files: {count}, Total size: {size_kb:.2f} KB"
+            
+        elif action == 'cleanup':
+            # Standard cleanup
+            deleted = perform_session_cleanup(force_all=False)
+            return f"Cleaned up {deleted} session files"
+            
+        elif action == 'force-cleanup':
+            # Aggressive cleanup
+            deleted = perform_session_cleanup(force_all=True)
+            return f"Force-cleaned {deleted} session files"
+            
+        else:
+            return "Invalid action. Use 'status', 'cleanup', or 'force-cleanup'"
+            
+    except Exception as e:
+        return f"Error: {str(e)}"
+
 #if __name__ == '__main__':
  #   app.run(host='0.0.0.0', port=5000, debug=True)
