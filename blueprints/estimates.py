@@ -163,7 +163,7 @@ def create_proposal():
             
             if templates and len(templates) > 0:
                 # Get the first template as default
-                default_template = templates[0].get('text', '')
+                default_template = templates[0]  # Templates are already strings
                 
                 # Replace placeholders with actual data
                 customer = estimate_result['customer']
@@ -240,7 +240,7 @@ Thank you for your business!
         
         if templates and len(templates) > 0:
             # Get the first template as default
-            default_template = templates[0].get('text', '')
+            default_template = templates[0]  # Templates are already strings
             
             # Replace placeholders with actual data
             customer = estimate_result['customer']
