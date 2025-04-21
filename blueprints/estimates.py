@@ -2,7 +2,7 @@ import os
 import json
 import uuid
 import logging
-from flask import Blueprint, request, redirect, url_for, flash, session, render_template
+from flask import Blueprint, request, redirect, url_for, flash, session, render_template, send_file
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import TextAreaField, SubmitField
@@ -78,22 +78,22 @@ def process_estimate():
             'total_cost': total_cost,
             'estimate_id': ESTIMATE_ID
         }
-        
+
         # Double-store the results in both session and application config to ensure persistence
         session['estimate_result'] = estimate_result
         session.modified = True
-        
+
         logging.debug(f"Estimate processed successfully. Total cost: ${total_cost:.2f}")
-        
+
         # Save data as a JSON file (backup persistence mechanism)
         try:
             with open(f'estimate_{ESTIMATE_ID}.json', 'w') as f:
                 json.dump(estimate_result, f, indent=4)
         except Exception as e:
             logging.error(f"Error saving estimate data to file: {str(e)}")
-        
+
         return redirect(url_for('estimates.estimate_results'))
-        
+
     except Exception as e:
         error_msg = str(e)
         logging.error(f"Error processing estimate: {error_msg}", exc_info=True)
@@ -106,7 +106,7 @@ def estimate_results():
     try:
         # Try to get data from session first
         estimate_result = session.get('estimate_result')
-        
+
         # If not in session, try to load from file (fallback)
         if not estimate_result:
             try:
@@ -119,7 +119,7 @@ def estimate_results():
                 logging.error(f"Error loading estimate data from file: {str(e)}")
                 flash('Estimate data not found. Please try again.', 'error')
                 return redirect(url_for('estimates.estimate'))
-                
+
         return render_template('estimate_results.html', 
                                customer=estimate_result['customer'],
                                project_details=estimate_result['project_details'],
@@ -136,72 +136,72 @@ def estimate_results():
 def create_proposal():
     # Add detailed logging
     logging.info(f"create_proposal called with method: {request.method}")
-    
+
     # Handle POST request from estimate_results.html
     if request.method == 'POST':
         logging.info(f"Processing POST request to create_proposal")
         logging.debug(f"POST data: {request.form}")
-        
+
         # Use data from session to maintain consistency
         estimate_result = session.get('estimate_result')
         logging.info(f"estimate_result from session: {estimate_result is not None}")
-        
+
         if not estimate_result:
             logging.warning("No estimate data found in session")
             flash('No estimate data found. Please generate an estimate first.', 'error')
             return redirect(url_for('estimates.estimate'))
-            
+
         # Load proposal templates
         templates, is_custom = load_templates()
         logging.info(f"Loaded {len(templates)} proposal templates (custom: {is_custom})")
-        
+
         try:
             # Generate a default proposal using the first template
             logging.info("Generating default proposal from template")
             default_proposal = ""
             raw_proposal = ""
-            
+
             if templates and len(templates) > 0:
                 # Get the first template as default
                 default_template = templates[0]  # Templates are already strings
-                
+
                 # Replace placeholders with actual data
                 customer = estimate_result['customer']
                 project_details = estimate_result['project_details']
                 line_items = estimate_result['line_items']
                 total_cost = estimate_result['total_cost']
-                
+
                 # Format line items as markdown table
                 line_items_text = "| Item | Quantity | Unit | Price | Total |\n"
                 line_items_text += "|------|----------|------|-------|-------|\n"
-                
+
                 for item in line_items['lines']:
                     line_items_text += f"| {item['name']} | {item['quantity']} | {item['unit']} | ${item['price']:.2f} | ${item['total']:.2f} |\n"
-                
+
                 line_items_text += f"\n**Total: ${total_cost:.2f}**"
-                
+
                 # Use the template from default_template.json
                 # First, prepare replacement values
                 customer_name = customer.get('name', 'Customer')
                 project_scope = project_details.get('notes', 'home improvement project')
                 total_cost_formatted = f"${total_cost:.2f}"
                 start_date = "as soon as possible"  # This could be configurable in the future
-                
+
                 # Now use the default template and replace placeholders
                 raw_proposal = default_template
-                
+
                 # Replace common placeholders in the template
                 raw_proposal = raw_proposal.replace("[Homeowner's Name]", customer_name)
                 raw_proposal = raw_proposal.replace("[brief project scope", project_scope)
                 raw_proposal = raw_proposal.replace("[$XX,XXX]", total_cost_formatted)
                 raw_proposal = raw_proposal.replace("[start date]", start_date)
-                
+
                 # Append line items to the proposal
                 raw_proposal += "\n\n## Project Details\n\n"
                 raw_proposal += f"Project Address: {customer.get('project_address', 'Same as customer address')}\n\n"
                 raw_proposal += "## Line Items\n\n"
                 raw_proposal += line_items_text
-                
+
                 # Add contact information at the end
                 raw_proposal += "\n\nContact Details:\n\n"
                 raw_proposal += f"- Name: {customer.get('name', 'Unknown')}\n"
@@ -211,7 +211,7 @@ def create_proposal():
                 # Store in session for later use
                 session['proposal_content'] = raw_proposal
                 session.modified = True
-            
+
             # Return the proposal.html template with data from session
             logging.info("Rendering proposal.html with session data")
             return render_template('proposal.html', 
@@ -227,68 +227,68 @@ def create_proposal():
             logging.error(f"Error rendering proposal template: {str(e)}", exc_info=True)
             flash(f"Error generating proposal: {str(e)}", "error")
             return redirect(url_for('estimates.estimate_results'))
-    
+
     # Handle GET request
     logging.info(f"Processing GET request to create_proposal")
     estimate_result = session.get('estimate_result')
     logging.info(f"estimate_result from session: {estimate_result is not None}")
-    
+
     if not estimate_result:
         logging.warning("No estimate data found in session")
         flash('No estimate data found. Please generate an estimate first.', 'error')
         return redirect(url_for('estimates.estimate'))
-    
+
     # Load proposal templates
     templates, is_custom = load_templates()
     logging.info(f"Loaded {len(templates)} proposal templates (custom: {is_custom})")
-    
+
     try:
         # Generate a default proposal using the first template
         logging.info("Generating default proposal from template for GET request")
         default_proposal = ""
         raw_proposal = ""
-        
+
         if templates and len(templates) > 0:
             # Get the first template as default
             default_template = templates[0]  # Templates are already strings
-            
+
             # Replace placeholders with actual data
             customer = estimate_result['customer']
             project_details = estimate_result['project_details']
             line_items = estimate_result['line_items']
             total_cost = estimate_result['total_cost']
-            
+
             # Format line items as markdown table
             line_items_text = "| Item | Quantity | Unit | Price | Total |\n"
             line_items_text += "|------|----------|------|-------|-------|\n"
-            
+
             for item in line_items['lines']:
                 line_items_text += f"| {item['name']} | {item['quantity']} | {item['unit']} | ${item['price']:.2f} | ${item['total']:.2f} |\n"
-            
+
             line_items_text += f"\n**Total: ${total_cost:.2f}**"
-            
+
             # Use the template from default_template.json
             # First, prepare replacement values
             customer_name = customer.get('name', 'Customer')
             project_scope = project_details.get('notes', 'home improvement project')
             total_cost_formatted = f"${total_cost:.2f}"
             start_date = "as soon as possible"  # This could be configurable in the future
-            
+
             # Now use the default template and replace placeholders
             raw_proposal = default_template
-            
+
             # Replace common placeholders in the template
             raw_proposal = raw_proposal.replace("[Homeowner's Name]", customer_name)
             raw_proposal = raw_proposal.replace("[brief project scope", project_scope)
             raw_proposal = raw_proposal.replace("[$XX,XXX]", total_cost_formatted)
             raw_proposal = raw_proposal.replace("[start date]", start_date)
-            
+
             # Append line items to the proposal
             raw_proposal += "\n\n## Project Details\n\n"
             raw_proposal += f"Project Address: {customer.get('project_address', 'Same as customer address')}\n\n"
             raw_proposal += "## Line Items\n\n"
             raw_proposal += line_items_text
-            
+
             # Add contact information at the end
             raw_proposal += "\n\nContact Details:\n\n"
             raw_proposal += f"- Name: {customer.get('name', 'Unknown')}\n"
@@ -298,7 +298,7 @@ def create_proposal():
             # Store in session for later use
             session['proposal_content'] = raw_proposal
             session.modified = True
-        
+
         # Return the proposal.html template with data from session
         logging.info("Rendering proposal.html with session data")
         return render_template('proposal.html', 
@@ -318,22 +318,31 @@ def create_proposal():
 @estimates_bp.route('/save_proposal', methods=['POST'])
 @require_auth
 def save_proposal():
-    try:
-        proposal_content = request.form.get('proposal_content')
-        if not proposal_content:
-            flash('No proposal content provided.', 'error')
-            return redirect(url_for('estimates.create_proposal'))
-        
-        # Store in session for later use
-        session['proposal_content'] = proposal_content
-        session.modified = True
-        
-        flash('Proposal saved successfully. You can now upload it to Google Drive.', 'success')
+    logging.info("save_proposal route called")
+    edited_proposal = request.form.get('edited_proposal')
+    logging.debug(f"Received proposal content: {edited_proposal[:50]}..." if edited_proposal else "No content")
+
+    if not edited_proposal:
+        # Try to get the proposal from the session if form submission failed
+        edited_proposal = session.get('proposal_content')
+        logging.debug(f"Retrieved from session: {edited_proposal[:50]}..." if edited_proposal else "No content in session")
+
+    if not edited_proposal:
+        flash('No proposal content provided.', 'error')
         return redirect(url_for('estimates.create_proposal'))
-    except Exception as e:
-        logging.error(f"Error saving proposal: {str(e)}", exc_info=True)
-        flash(f'Error saving proposal: {str(e)}', 'error')
-        return redirect(url_for('estimates.create_proposal'))
+
+    # Generate a unique filename
+    filename = f"proposal_{uuid.uuid4()}.md"
+
+    # Save the proposal to a temporary file
+    with open(filename, 'w') as f:
+        f.write(edited_proposal)
+
+    logging.info(f"Saved proposal to {filename}")
+
+    # Send the file to the client
+    return send_file(filename, as_attachment=True, download_name=filename)
+
 
 @estimates_bp.route('/save_to_drive', methods=['POST'])
 @require_auth
@@ -344,37 +353,37 @@ def save_to_drive():
         if not proposal_content:
             flash('No proposal content found. Please create a proposal first.', 'error')
             return redirect(url_for('estimates.create_proposal'))
-        
+
         # Get customer info for naming
         estimate_result = session.get('estimate_result')
         if not estimate_result or 'customer' not in estimate_result:
             flash('Customer information not found. Please generate an estimate first.', 'error')
             return redirect(url_for('estimates.estimate'))
-        
+
         customer = estimate_result['customer']
         customer_name = customer.get('name', 'Unknown')
         project_address = customer.get('project_address', 'Unknown')
-        
+
         # Create folder structure in Google Drive
         project_folder_id = create_folder_if_not_exists("Project Proposals")
         if not project_folder_id:
             flash('Failed to create or access Google Drive folder.', 'error')
             return redirect(url_for('estimates.create_proposal'))
-            
+
         # Create spreadsheet for tracking if it doesn't exist
         spreadsheet_id = create_tracking_sheet_if_not_exists(project_folder_id)
-        
+
         # Create document with proposal content
         doc_title = f"Proposal - {customer_name} - {project_address}"
         doc_info = create_doc_in_folder(doc_title, proposal_content, project_folder_id)
-        
+
         if not doc_info:
             flash('Failed to create Google Doc.', 'error')
             return redirect(url_for('estimates.create_proposal'))
-            
+
         # Add entry to tracking spreadsheet
         total_cost = estimate_result.get('total_cost', 0)
-        
+
         # Append to tracking sheet
         values = [
             [
@@ -387,14 +396,14 @@ def save_to_drive():
             ]
         ]
         append_result = append_to_sheet(spreadsheet_id, values)
-        
+
         if append_result:
             flash('Proposal saved to Google Drive successfully!', 'success')
         else:
             flash('Proposal saved to Google Drive, but failed to update tracking sheet.', 'warning')
-            
+
         return redirect(url_for('estimates.create_proposal'))
-        
+
     except Exception as e:
         logging.error(f"Error saving to Google Drive: {str(e)}", exc_info=True)
         flash(f'Error saving to Google Drive: {str(e)}', 'error')

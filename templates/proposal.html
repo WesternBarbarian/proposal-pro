@@ -64,15 +64,44 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Update hidden input before form submission
-    downloadForm.addEventListener('submit', function() {
-        proposalContent.value = proposalEditor.value;
+    downloadForm.addEventListener('submit', function(e) {
+        // Set content from either edit mode or view mode
+        if (editMode.classList.contains('d-none')) {
+            // We're in view mode, so get the raw proposal
+            proposalContent.value = proposalEditor.value;
+        } else {
+            // We're in edit mode, use the editor value directly
+            proposalContent.value = proposalEditor.value;
+        }
+        
+        // Debug
+        console.log("Submitting proposal content:", proposalContent.value);
+        
+        // Prevent submission if empty
+        if (!proposalContent.value.trim()) {
+            e.preventDefault();
+            alert("No proposal content to download");
+        }
     });
     
     const driveForm = document.getElementById('driveForm');
     const driveProposalContent = document.getElementById('driveProposalContent');
     
-    driveForm.addEventListener('submit', function() {
-        driveProposalContent.value = proposalEditor.value;
+    driveForm.addEventListener('submit', function(e) {
+        // Set content from either edit mode or view mode
+        if (editMode.classList.contains('d-none')) {
+            // We're in view mode, use the stored value
+            driveProposalContent.value = proposalEditor.value;
+        } else {
+            // We're in edit mode, use the editor value directly
+            driveProposalContent.value = proposalEditor.value;
+        }
+        
+        // Prevent submission if empty
+        if (!driveProposalContent.value.trim()) {
+            e.preventDefault();
+            alert("No proposal content to save");
+        }
     });
 });
 </script>
