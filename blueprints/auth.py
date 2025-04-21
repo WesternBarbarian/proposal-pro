@@ -110,8 +110,17 @@ def oauth2callback():
         # Create a new OAuth flow
         flow = create_oauth_flow(request.base_url)
         
-        # Fetch token using authorization response
-        flow.fetch_token(authorization_response=request.url)
+        try:
+            # Fetch token using authorization response
+            flow.fetch_token(authorization_response=request.url)
+        except Warning as w:
+            # Handle scope change warnings gracefully
+            if "Scope has changed" in str(w):
+                logging.warning(f"Scope change warning: {str(w)}")
+                # Continue with the authentication process
+            else:
+                # Re-raise unexpected warnings
+                raise
         
         # Get credentials
         credentials = flow.credentials

@@ -15,12 +15,16 @@ def create_oauth_flow(request_url=None):
         A configured Flow object for OAuth authentication.
     """
     # Get client credentials from GOOGLE_OAUTH_SECRETS environment variable
-    client_secrets = json.loads(os.getenv("GOOGLE_OAUTH_SECRETS"))
+    oauth_secrets = os.getenv("GOOGLE_OAUTH_SECRETS")
+    if not oauth_secrets:
+        raise ValueError("GOOGLE_OAUTH_SECRETS environment variable is not set")
+    client_secrets = json.loads(oauth_secrets)
     
     # Get scopes from app config
     scopes = current_app.config.get('GOOGLE_API_SCOPES', [
         'https://www.googleapis.com/auth/userinfo.email',
         'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/drive.file',
         'openid'
     ])
     
