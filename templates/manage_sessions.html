@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Session Management{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="mb-4">Session Management</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Session Files Overview</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Total Session Files:</strong> {{ stats.total_files }}</p>
+                    <p><strong>Total Size:</strong> {{ (stats.size_bytes / 1024)|round(2) }} KB</p>
+                </div>
+                <div class="col-md-6">
+                    {% if stats.oldest_file %}
+                    <p><strong>Oldest File:</strong> {{ stats.oldest_file.time }}</p>
+                    {% endif %}
+                    {% if stats.newest_file %}
+                    <p><strong>Newest File:</strong> {{ stats.newest_file.time }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0">Maintenance Tools</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('manage_sessions') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="cleanup">
+                <p>Clean up old session files to free up disk space. Only files older than 24 hours will be removed.</p>
+                <button type="submit" class="btn btn-primary">Clean Up Old Sessions</button>
+            </form>
+            
+            <hr>
+            
+            <form method="POST" action="{{ url_for('manage_sessions') }}" class="mt-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="force_cleanup">
+                <div class="alert alert-warning">
+                    <strong>Caution:</strong> This will aggressively clean up session files, including newer ones.
+                    Only the 5 most recent files will be kept.
+                </div>
+                <button type="submit" class="btn btn-danger">Force Aggressive Cleanup</button>
+            </form>
+            
+            <hr>
+            
+            <div class="mt-3">
+                <h6>Session Configuration</h6>
+                <ul>
+                    <li>Maximum session files: {{ MAX_SESSION_FILES }}</li>
+                    <li>Session lifetime: 1 day</li>
+                    <li>Auto cleanup interval: 1 hour</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
