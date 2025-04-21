@@ -1,5 +1,6 @@
 import os
 import logging
+import warnings
 from flask import Blueprint, request, redirect, url_for, flash, session, render_template
 from functools import wraps
 import requests
@@ -110,22 +111,17 @@ def oauth2callback():
         # Create a new OAuth flow
         flow = create_oauth_flow(request.base_url)
         
-        try:
+        # The fetch_token method can raise a Warning if scopes have changed
+        # We need to catch this and continue with authentication
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', message='Scope has changed')
             # Fetch token using authorization response
             flow.fetch_token(authorization_response=request.url)
-        except Warning as w:
-            # Handle scope change warnings gracefully
-            if "Scope has changed" in str(w):
-                logging.warning(f"Scope change warning: {str(w)}")
-                # Continue with the authentication process
-            else:
-                # Re-raise unexpected warnings
-                raise
         
         # Get credentials
         credentials = flow.credentials
         
-        # Store credentials in session
+        # Store credentials in session with consistent formatting
         session['credentials'] = {
             'token': credentials.token,
             'refresh_token': credentials.refresh_token,
