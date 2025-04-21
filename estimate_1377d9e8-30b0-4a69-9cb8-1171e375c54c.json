@@ -1,0 +1,43 @@
+{
+    "customer": {
+        "name": "Jimmy Bean",
+        "phone": "unknown",
+        "email": "unknown",
+        "address": "304 Walnut Street Manhattan KS, 66502",
+        "project_address": "same"
+    },
+    "project_details": {
+        "notes": "Rec Room\n40 hours labor\n300 square feet drywall",
+        "details": [
+            {
+                "item": "labor",
+                "quantity": 40
+            },
+            {
+                "item": "drywall",
+                "quantity": 300
+            }
+        ]
+    },
+    "line_items": {
+        "lines": [
+            {
+                "name": "General Labor",
+                "unit": "hour",
+                "price": 45.0,
+                "quantity": 40,
+                "total": 1800.0
+            },
+            {
+                "name": "drywall",
+                "unit": "square foot",
+                "price": 2.5,
+                "quantity": 300,
+                "total": 750.0
+            }
+        ],
+        "sub_total": 2550.0
+    },
+    "total_cost": 2550.0,
+    "estimate_id": "1377d9e8-30b0-4a69-9cb8-1171e375c54c"
+}

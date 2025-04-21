@@ -131,26 +131,73 @@ def estimate_results():
         flash(f'Error displaying estimate results: {str(e)}', 'error')
         return redirect(url_for('estimates.estimate'))
 
-@estimates_bp.route('/create_proposal')
+@estimates_bp.route('/create_proposal', methods=['GET', 'POST'])
 @require_auth
 def create_proposal():
-    # Get stored estimate data
+    # Add detailed logging
+    logging.info(f"create_proposal called with method: {request.method}")
+    
+    # Handle POST request from estimate_results.html
+    if request.method == 'POST':
+        logging.info(f"Processing POST request to create_proposal")
+        logging.debug(f"POST data: {request.form}")
+        
+        # Use data from session to maintain consistency
+        estimate_result = session.get('estimate_result')
+        logging.info(f"estimate_result from session: {estimate_result is not None}")
+        
+        if not estimate_result:
+            logging.warning("No estimate data found in session")
+            flash('No estimate data found. Please generate an estimate first.', 'error')
+            return redirect(url_for('estimates.estimate'))
+            
+        # Load proposal templates
+        templates = load_templates()
+        logging.info(f"Loaded {len(templates)} proposal templates")
+        
+        try:
+            # Return the proposal.html template with data from session
+            logging.info("Rendering proposal.html with session data")
+            return render_template('proposal.html', 
+                            customer=estimate_result['customer'],
+                            project_details=estimate_result['project_details'],
+                            line_items=estimate_result['line_items'],
+                            total_cost=estimate_result['total_cost'],
+                            templates=templates,
+                            authenticated=True)
+        except Exception as e:
+            logging.error(f"Error rendering proposal template: {str(e)}", exc_info=True)
+            flash(f"Error generating proposal: {str(e)}", "error")
+            return redirect(url_for('estimates.estimate_results'))
+    
+    # Handle GET request
+    logging.info(f"Processing GET request to create_proposal")
     estimate_result = session.get('estimate_result')
+    logging.info(f"estimate_result from session: {estimate_result is not None}")
     
     if not estimate_result:
+        logging.warning("No estimate data found in session")
         flash('No estimate data found. Please generate an estimate first.', 'error')
         return redirect(url_for('estimates.estimate'))
     
     # Load proposal templates
     templates = load_templates()
+    logging.info(f"Loaded {len(templates)} proposal templates")
     
-    return render_template('proposal.html', 
-                          customer=estimate_result['customer'],
-                          project_details=estimate_result['project_details'],
-                          line_items=estimate_result['line_items'],
-                          total_cost=estimate_result['total_cost'],
-                          templates=templates,
-                          authenticated=True)
+    try:
+        # Return the proposal.html template with data from session
+        logging.info("Rendering proposal.html with session data")
+        return render_template('proposal.html', 
+                            customer=estimate_result['customer'],
+                            project_details=estimate_result['project_details'],
+                            line_items=estimate_result['line_items'],
+                            total_cost=estimate_result['total_cost'],
+                            templates=templates,
+                            authenticated=True)
+    except Exception as e:
+        logging.error(f"Error rendering proposal template: {str(e)}", exc_info=True)
+        flash(f"Error generating proposal: {str(e)}", "error")
+        return redirect(url_for('index'))
 
 @estimates_bp.route('/save_proposal', methods=['POST'])
 @require_auth
