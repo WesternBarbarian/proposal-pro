@@ -16,7 +16,7 @@ def proposal_templates():
 @proposals_bp.route('/add-template', methods=['POST'])
 @require_auth
 def add_template_route():
-    template_text = request.form.get('template_text')
+    template_text = request.form.get('template')
     if not template_text:
         flash('Template text is required.', 'error')
         return redirect(url_for('proposals.proposal_templates'))
