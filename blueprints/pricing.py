@@ -76,15 +76,18 @@ def generate_price_list_route():
 def delete_price():
     item_name = request.form.get('item')
     if not item_name:
-        return jsonify({'success': False, 'error': 'Item name is required'})
+        flash('Item name is required', 'error')
+        return redirect(url_for('pricing.price_list'))
     
     price_list = load_price_list()
     if item_name in price_list:
         del price_list[item_name]
         save_price_list(price_list)
-        return jsonify({'success': True})
+        flash('Price deleted successfully', 'success')
     else:
-        return jsonify({'success': False, 'error': 'Item not found'})
+        flash('Item not found', 'error')
+    
+    return redirect(url_for('pricing.price_list'))
 
 @pricing_bp.route('/add-price', methods=['POST'])
 @require_auth
@@ -94,43 +97,44 @@ def add_price():
     price = request.form.get('price')
     
     if not all([item, unit, price]):
-        return jsonify({'success': False, 'error': 'All fields are required'})
+        flash('All fields are required', 'error')
+        return redirect(url_for('pricing.price_list'))
     
     try:
         price = float(price)
     except ValueError:
-        return jsonify({'success': False, 'error': 'Price must be a number'})
+        flash('Price must be a number', 'error')
+        return redirect(url_for('pricing.price_list'))
     
     price_list = load_price_list()
     price_list[item] = {"unit": unit, "price": price}
     save_price_list(price_list)
     
-    return jsonify({'success': True})
+    flash('Price added successfully', 'success')
+    return redirect(url_for('pricing.price_list'))
 
 @pricing_bp.route('/update-price', methods=['POST'])
 @require_auth
 def update_price():
-    original_item = request.form.get('original_item')
     item = request.form.get('item')
     unit = request.form.get('unit')
     price = request.form.get('price')
     
-    if not all([original_item, item, unit, price]):
-        return jsonify({'success': False, 'error': 'All fields are required'})
+    if not all([item, unit, price]):
+        flash('All fields are required', 'error')
+        return redirect(url_for('pricing.price_list'))
     
     try:
         price = float(price)
     except ValueError:
-        return jsonify({'success': False, 'error': 'Price must be a number'})
+        flash('Price must be a number', 'error')
+        return redirect(url_for('pricing.price_list'))
     
     price_list = load_price_list()
-    
-    # Remove the original item if the name changed
-    if original_item != item and original_item in price_list:
-        del price_list[original_item]
     
     # Add or update the item
     price_list[item] = {"unit": unit, "price": price}
     save_price_list(price_list)
     
-    return jsonify({'success': True})
+    flash('Price updated successfully', 'success')
+    return redirect(url_for('pricing.price_list'))
