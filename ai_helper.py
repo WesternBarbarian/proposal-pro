@@ -32,10 +32,10 @@ class Items(BaseModel):
 class ProjectData(BaseModel):
     # Customer information
     customer_name: str = Field(description="The name of the customer, if not visible, please return 'unknown'")
-    customer_phone: str = Field(description="The phone number of the customer, if not visible, please return 'unknown")
-    customer_email: str = Field(description="The email address of the customer, if not visible, please return 'unknown")
-    customer_address: str = Field(description="The address of the customer, if not visible, please return 'unknown")
-    project_address: str = Field(description="The address of the project, if not visible, please return 'same")
+    customer_phone: str = Field(description="The phone number of the customer, if not visible, please return 'unknown'")
+    customer_email: str = Field(description="The email address of the customer, if not visible, please return 'unknown'")
+    customer_address: str = Field(description="The address of the customer, if not visible, please return 'unknown'")
+    project_address: str = Field(description="The address of the project, if not visible, please return 'same'")
     # Project information
     notes: str = Field(description="Notes about the project, if any")
     details: list[Request] = Field(description="The list of items with the item name and quantity.")
