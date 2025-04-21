@@ -32,7 +32,7 @@
                                     data-unit="{{ details.unit }}">
                                 Edit
                             </button>
-                            <form method="POST" action="{{ url_for('delete_price') }}" class="d-inline">
+                            <form method="POST" action="{{ url_for('pricing.delete_price') }}" class="d-inline">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <input type="hidden" name="item" value="{{ item }}">
                                 <button type="submit" class="btn btn-sm btn-danger" 
@@ -54,7 +54,7 @@
             <h4>Add New Item</h4>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ url_for('add_price') }}">
+            <form method="POST" action="{{ url_for('pricing.add_price') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="row">
                     <div class="col-md-4 mb-3">
@@ -81,7 +81,7 @@
             <h4>Generate New Price List</h4>
         </div>
         <div class="card-body">
-                    <form method="POST" action="{{ url_for('generate_price_list_route') }}" enctype="multipart/form-data">
+                    <form method="POST" action="{{ url_for('pricing.generate_price_list_route') }}" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
                         <div class="mb-3">
@@ -142,7 +142,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="{{ url_for('update_price') }}" id="editPriceForm">
+                    <form method="POST" action="{{ url_for('pricing.update_price') }}" id="editPriceForm">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         <input type="hidden" name="item" id="editItemName">
                         <div class="mb-3">
@@ -173,7 +173,7 @@ function showWarningModal() {
 }
 
 function submitPriceListForm() {
-    document.querySelector('form[action="{{ url_for("generate_price_list_route") }}"]').submit();
+    document.querySelector('form[action="{{ url_for("pricing.generate_price_list_route") }}"]').submit();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
