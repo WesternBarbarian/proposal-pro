@@ -41,11 +41,27 @@ def add_template(template_text):
 
 def delete_template(template_id):
     try:
-        templates, _ = load_templates()
+        templates, using_custom = load_templates()
+        
+        # Only allow deleting custom templates
+        if not using_custom:
+            return False, "Cannot delete default templates. Add a custom template first."
+            
+        template_id = int(template_id)  # Ensure it's an integer
         if 0 <= template_id < len(templates):
             templates.pop(template_id)
-            save_templates(templates)
-            return True, "Template deleted successfully"
+            
+            # If all templates are deleted, remove the custom_templates.json file
+            if len(templates) == 0:
+                try:
+                    import os
+                    os.remove('custom_templates.json')
+                    return True, "Template deleted and falling back to default templates"
+                except Exception as e:
+                    return False, f"Error removing custom templates file: {str(e)}"
+            else:
+                save_templates(templates)
+                return True, "Template deleted successfully"
         return False, "Template not found"
     except Exception as e:
         return False, str(e)

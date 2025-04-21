@@ -28,6 +28,12 @@ def add_template_route():
 @proposals_bp.route('/delete-template/<template_id>', methods=['POST'])
 @require_auth
 def delete_template_route(template_id):
+    templates, using_custom = load_templates()
+    
+    if not using_custom:
+        flash('Cannot delete default templates. Add a custom template first.', 'error')
+        return redirect(url_for('proposals.proposal_templates'))
+        
     success, message = delete_template(template_id)
     flash(message, 'success' if success else 'error')
     return redirect(url_for('proposals.proposal_templates'))
