@@ -5,7 +5,8 @@ from functools import wraps
 import requests
 from oauth_config import create_oauth_flow
 
-auth_bp = Blueprint('auth', __name__)
+# Register blueprint with url_prefix to match the original routes in app.py.backup
+auth_bp = Blueprint('auth', __name__, url_prefix='')
 
 # List of allowed users and domains
 ALLOWED_USERS = ['jason.matthews@cyborguprising.com']  # Replace with allowed emails
@@ -75,6 +76,7 @@ def require_auth(f):
             
     return decorated
 
+# Match the original route paths from app.py.backup
 @auth_bp.route('/login')
 def login():
     # Clear any existing session data
