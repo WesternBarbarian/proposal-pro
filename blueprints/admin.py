@@ -3,14 +3,10 @@ import glob
 import time
 import logging
 from datetime import datetime
-from flask import Blueprint, request, redirect, url_for, flash, session, render_template
+from flask import Blueprint, request, redirect, url_for, flash, session, render_template, current_app
 from blueprints.auth import require_auth, is_admin_user
 
 admin_bp = Blueprint('admin', __name__)
-
-# Session directory and constants
-SESSION_DIR = 'flask_session'
-MAX_SESSION_FILES = 20
 
 def perform_session_cleanup(force_all=False):
     """Perform the actual session cleanup logic.
@@ -19,19 +15,24 @@ def perform_session_cleanup(force_all=False):
         force_all: If True, ignores age check and cleans all but the most recent files
     """
     try:
+        # Get configuration from current_app
+        session_dir = current_app.config['SESSION_FILE_DIR']
+        max_files = current_app.config['MAX_SESSION_FILES']
+        cleanup_threshold = current_app.config['SESSION_CLEANUP_THRESHOLD']
+        
         # Get all session files
-        session_files = glob.glob(f"{SESSION_DIR}/*")
+        session_files = glob.glob(f"{session_dir}/*")
         
         # Skip if we don't have too many files and not forcing cleanup
-        if len(session_files) <= MAX_SESSION_FILES and not force_all:
+        if len(session_files) <= max_files and not force_all:
             logging.info(f"No session cleanup needed. {len(session_files)} files found.")
             return 0
             
         # Sort files by modification time (oldest first)
         session_files.sort(key=os.path.getmtime)
         
-        # Delete the oldest files, keeping MAX_SESSION_FILES
-        files_to_delete = session_files[:-MAX_SESSION_FILES] if len(session_files) > MAX_SESSION_FILES else []
+        # Delete the oldest files, keeping max_files
+        files_to_delete = session_files[:-max_files] if len(session_files) > max_files else []
         
         # If forcing, delete more files but always keep at least 5 most recent
         if force_all and len(session_files) > 5:
@@ -41,10 +42,10 @@ def perform_session_cleanup(force_all=False):
         
         for file_path in files_to_delete:
             try:
-                # Only delete files older than 24 hours to avoid active sessions
+                # Only delete files older than cleanup_threshold to avoid active sessions
                 # Unless force_all is True
                 file_age = time.time() - os.path.getmtime(file_path)
-                if force_all or file_age > 86400:  # 24 hours in seconds
+                if force_all or file_age > cleanup_threshold:
                     os.remove(file_path)
                     logging.info(f"Cleaned up session file: {file_path}")
                     deleted_count += 1
@@ -102,7 +103,8 @@ def manage_sessions():
     }
     
     try:
-        session_files = glob.glob(f"{SESSION_DIR}/*")
+        session_dir = current_app.config['SESSION_FILE_DIR']
+        session_files = glob.glob(f"{session_dir}/*")
         stats['total_files'] = len(session_files)
         
         if session_files:
@@ -129,7 +131,7 @@ def manage_sessions():
     
     return render_template('manage_sessions.html', 
                           stats=stats,
-                          MAX_SESSION_FILES=MAX_SESSION_FILES,
+                          MAX_SESSION_FILES=current_app.config['MAX_SESSION_FILES'],
                           authenticated=True)
 
 # Admin-only utility routes for session cleanup
@@ -148,7 +150,8 @@ def util_cleanup_sessions(action):
     try:
         if action == 'status':
             # Get session file stats
-            session_files = glob.glob(f"{SESSION_DIR}/*")
+            session_dir = current_app.config['SESSION_FILE_DIR']
+            session_files = glob.glob(f"{session_dir}/*")
             count = len(session_files)
             size_bytes = sum(os.path.getsize(f) for f in session_files) if session_files else 0
             size_kb = size_bytes / 1024

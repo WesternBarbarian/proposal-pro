@@ -1,21 +1,32 @@
 
 import os
 import json
+from flask import current_app
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 
-SCOPES = [
-    'https://www.googleapis.com/auth/drive.file',  # For file/folder operations
-    'https://www.googleapis.com/auth/spreadsheets',  # For Google Sheets
-    'https://www.googleapis.com/auth/documents',  # For Google Docs
-    'https://www.googleapis.com/auth/userinfo.profile',  # Basic user info
-    'https://www.googleapis.com/auth/userinfo.email',  # User email
-    'openid'  # OpenID Connect
-]
-
 def create_oauth_flow(request_url=None):
+    """Create and configure an OAuth flow for Google authentication.
+    
+    Args:
+        request_url: The URL of the current request, used to determine the redirect URI.
+        
+    Returns:
+        A configured Flow object for OAuth authentication.
+    """
+    # Get client credentials from GOOGLE_OAUTH_SECRETS environment variable
     client_secrets = json.loads(os.getenv("GOOGLE_OAUTH_SECRETS"))
-    flow = Flow.from_client_config(client_secrets, scopes=SCOPES)
+    
+    # Get scopes from app config
+    scopes = current_app.config.get('GOOGLE_API_SCOPES', [
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'openid'
+    ])
+    
+    # Create the OAuth flow
+    flow = Flow.from_client_config(client_secrets, scopes=scopes)
+    
     if request_url:
         # Get the base URL from the request and ensure HTTPS
         if "://" in request_url:
@@ -27,5 +38,8 @@ def create_oauth_flow(request_url=None):
         else:
             # Fallback to a known URL format
             base_url = f"https://{os.environ.get('REPL_SLUG', 'app')}.{os.environ.get('REPL_OWNER', 'repl')}.repl.co"
+        
+        # Set the redirect URI
         flow.redirect_uri = f"{base_url}/oauth2callback"
+        
     return flow

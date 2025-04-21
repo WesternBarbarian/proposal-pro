@@ -8,19 +8,23 @@ from oauth_config import create_oauth_flow
 # Register blueprint with url_prefix to match the original routes in app.py.backup
 auth_bp = Blueprint('auth', __name__, url_prefix='')
 
-# List of allowed users and domains
-ALLOWED_USERS = ['jason.matthews@cyborguprising.com']  # Replace with allowed emails
-ALLOWED_DOMAINS = ['cyborguprising.com']  # Replace with allowed domains
-
 def is_user_allowed(email):
     """Check if user's email is in the allowed list or from an allowed domain."""
-    return (email in ALLOWED_USERS or 
-            any(email.endswith('@' + domain) for domain in ALLOWED_DOMAINS))
+    from flask import current_app
+    
+    # Get allowed users and domains from config
+    allowed_users = current_app.config.get('ALLOWED_USERS', [])
+    allowed_domains = current_app.config.get('ALLOWED_DOMAINS', [])
+    
+    return (email in allowed_users or 
+            any(email.endswith('@' + domain) for domain in allowed_domains))
 
 def is_admin_user(email):
     """Check if a user is an admin user with session management permissions."""
-    # List of admin emails - you can modify this as needed
-    admin_emails = ['jason.matthews@cyborguprising.com']
+    from flask import current_app
+    
+    # Get admin users from config
+    admin_emails = current_app.config.get('ADMIN_USERS', [])
     return email in admin_emails
 
 def require_auth(f):
