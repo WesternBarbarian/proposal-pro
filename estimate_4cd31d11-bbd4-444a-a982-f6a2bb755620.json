@@ -1,0 +1,43 @@
+{
+    "customer": {
+        "name": "John James",
+        "phone": "unknown",
+        "email": "unknown",
+        "address": "23 Elm Street, Manhattan KS 66502",
+        "project_address": "same"
+    },
+    "project_details": {
+        "notes": "Yard cleanup",
+        "details": [
+            {
+                "item": "labor",
+                "quantity": 20
+            },
+            {
+                "item": "trucks junk",
+                "quantity": 2
+            }
+        ]
+    },
+    "line_items": {
+        "lines": [
+            {
+                "name": "General Labor",
+                "unit": "hour",
+                "price": 45.0,
+                "quantity": 20,
+                "total": 900.0
+            },
+            {
+                "name": "Junk Removal",
+                "unit": "truckload",
+                "price": 250.0,
+                "quantity": 2,
+                "total": 500.0
+            }
+        ],
+        "sub_total": 1400.0
+    },
+    "total_cost": 1400.0,
+    "estimate_id": "4cd31d11-bbd4-444a-a982-f6a2bb755620"
+}
