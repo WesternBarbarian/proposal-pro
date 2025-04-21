@@ -10,8 +10,8 @@ proposals_bp = Blueprint('proposals', __name__)
 @proposals_bp.route('/proposal-templates')
 @require_auth
 def proposal_templates():
-    templates = load_templates()
-    return render_template('proposal_templates.html', templates=templates, authenticated=True)
+    templates, using_custom = load_templates()
+    return render_template('proposal_templates.html', templates=templates, using_custom=using_custom, authenticated=True)
 
 @proposals_bp.route('/add-template', methods=['POST'])
 @require_auth
