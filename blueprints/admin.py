@@ -132,13 +132,19 @@ def manage_sessions():
                           MAX_SESSION_FILES=MAX_SESSION_FILES,
                           authenticated=True)
 
-# Utility route for testing session cleanup without admin authentication
+# Admin-only utility routes for session cleanup
 @admin_bp.route('/util/cleanup-sessions/<action>')
+@require_auth
 def util_cleanup_sessions(action):
-    """Utility route for testing session cleanup.
+    """Admin utility route for session cleanup.
     
-    This is a temporary development route that should be disabled in production.
+    Requires admin authentication to prevent unauthorized access.
     """
+    # Check if the user is an admin
+    if not is_admin_user(session.get('user_email')):
+        flash('Access denied. You are not authorized to manage sessions.', 'error')
+        return redirect(url_for('index'))
+        
     try:
         if action == 'status':
             # Get session file stats
@@ -150,12 +156,12 @@ def util_cleanup_sessions(action):
             return f"Session files: {count}, Total size: {size_kb:.2f} KB"
             
         elif action == 'cleanup':
-            # Standard cleanup
+            # Standard cleanup (only files older than 24 hours)
             deleted = perform_session_cleanup(force_all=False)
             return f"Cleaned up {deleted} session files"
             
         elif action == 'force-cleanup':
-            # Aggressive cleanup
+            # Aggressive cleanup (keeps only 5 most recent files)
             deleted = perform_session_cleanup(force_all=True)
             return f"Force-cleaned {deleted} session files"
             
@@ -163,4 +169,5 @@ def util_cleanup_sessions(action):
             return "Invalid action. Use 'status', 'cleanup', or 'force-cleanup'"
             
     except Exception as e:
+        logging.error(f"Session cleanup utility error: {str(e)}")
         return f"Error: {str(e)}"
