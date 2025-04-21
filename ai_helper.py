@@ -2,9 +2,13 @@ from google import genai
 from google.genai import types
 import os
 import json
+import logging
 from pydantic import BaseModel, Field, computed_field
 from typing import List
 from template_manager import load_templates
+
+# Configure module logger
+logger = logging.getLogger(__name__)
 
 # Configure Gemini AI
 api_key= os.environ['GEMINI_API_KEY']
@@ -43,12 +47,16 @@ class ProjectData(BaseModel):
 def extract_project_data(description: str) -> tuple[dict, dict]:
     prompt = f"Extract the structured data from {description}"
 
-    response = client.models.generate_content(
-        model=model,
-        contents=prompt,
-        config={'response_mime_type': 'application/json', 'response_schema': ProjectData})
+    try:
+        response = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config={'response_mime_type': 'application/json', 'response_schema': ProjectData})
 
-    project_data: ProjectData = response.parsed
+        project_data: ProjectData = response.parsed
+    except Exception as e:
+        logger.error(f"Error extracting project data: {str(e)}")
+        raise
 
     # Convert to separate customer and project dictionaries for backward compatibility
     customer = {
@@ -248,11 +256,12 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
                     logger.debug(f"Direct match found for {item_name}, price: {item_data['price']}")
         
         # If we have matches for all items, return the Line_Items
-        if manual_line_items and len(manual_line_items) == len(project_details["details"]):
-            logger.debug(f"Using direct matching for all {len(manual_line_items)} items")
-            return Line_Items(lines=manual_line_items)
-        else:
-            logger.debug(f"Direct matching found {len(manual_line_items)} items, but needed {len(project_details['details'])}")
+        if manual_line_items:
+            if len(manual_line_items) == len(project_details["details"]):
+                logger.debug(f"Using direct matching for all {len(manual_line_items)} items")
+                return Line_Items(lines=manual_line_items)
+            else:
+                logger.debug(f"Direct matching found {len(manual_line_items)} items, but needed {len(project_details['details'])}")
     except Exception as e:
         logger.error(f"Error in direct price lookup: {str(e)}")
         # Continue to AI lookup if direct lookup fails
@@ -416,14 +425,24 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
 
 
 #Generate proposal
-def generate_proposal(project_details: dict, customer: dict, line_items: Line_Items, templates: list) -> str:
+def generate_proposal(project_details: dict, customer: dict, line_items: Line_Items, templates: list[str]) -> str:
+    # Validate input parameters
+    if not project_details:
+        logger.warning("Empty project details provided to generate_proposal")
+        project_details = {"notes": "", "details": []}
+        
+    if not customer:
+        logger.warning("Empty customer information provided to generate_proposal")
+        customer = {"name": "Customer", "phone": "", "email": "", "address": "", "project_address": ""}
+    
     # Ensure templates are all strings and join them with clear separators
     if not templates or len(templates) == 0:
         # Fallback to load templates if none provided
+        logger.info("No templates provided, loading default templates")
         templates, _ = load_templates()
     
     # Debug log to check what templates we're receiving
-    print(f"DEBUG - Templates loaded: {templates}")
+    logger.debug(f"Templates loaded: {templates}")
     
     # Process templates to ensure proper newlines and formatting
     processed_templates = []
@@ -451,8 +470,8 @@ def generate_proposal(project_details: dict, customer: dict, line_items: Line_It
     """
 
 
-    # Debug print template_examples to verify format
-    print(f"DEBUG - Template examples being sent to AI: {template_examples}")
+    # Debug log template examples to verify format
+    logger.debug(f"Template examples being sent to AI: {template_examples}")
     
     response = client.models.generate_content(
         model=model,
