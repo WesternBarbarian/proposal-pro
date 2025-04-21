@@ -33,7 +33,7 @@
             <h5 class="mb-0">Maintenance Tools</h5>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ url_for('manage_sessions') }}">
+            <form method="POST" action="{{ url_for('admin.manage_sessions') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="cleanup">
                 <p>Clean up old session files to free up disk space. Only files older than 24 hours will be removed.</p>
@@ -42,7 +42,7 @@
             
             <hr>
             
-            <form method="POST" action="{{ url_for('manage_sessions') }}" class="mt-4">
+            <form method="POST" action="{{ url_for('admin.manage_sessions') }}" class="mt-4">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="action" value="force_cleanup">
                 <div class="alert alert-warning">

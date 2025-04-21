@@ -8,14 +8,14 @@
             <button class="btn btn-secondary me-2" id="toggleEdit">
                 <i data-feather="edit"></i> Edit
             </button>
-            <form method="POST" action="{{ url_for('save_proposal') }}" class="d-inline" id="downloadForm">
+            <form method="POST" action="{{ url_for('estimates.save_proposal') }}" class="d-inline" id="downloadForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="edited_proposal" id="proposalContent">
                 <button type="submit" class="btn btn-primary me-2">
                     <i data-feather="download"></i> Download as Markdown
                 </button>
             </form>
-            <form method="POST" action="{{ url_for('save_to_drive') }}" class="d-inline" id="driveForm">
+            <form method="POST" action="{{ url_for('estimates.save_to_drive') }}" class="d-inline" id="driveForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="proposal_content" id="driveProposalContent">
                 <input type="hidden" name="customer_name" value="{{ customer.name }}">
