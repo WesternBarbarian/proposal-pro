@@ -21,18 +21,20 @@
                         <a class="nav-link" href="{{ url_for('index') }}">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('estimate') }}">New Estimate</a>
+                        <a class="nav-link" href="{{ url_for('estimates.estimate') }}">New Estimate</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('price_list') }}">Price List</a>
-<a class="nav-link" href="{{ url_for('proposal_templates') }}">Proposal Templates</a>
+                        <a class="nav-link" href="{{ url_for('pricing.price_list') }}">Price List</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('proposals.proposal_templates') }}">Proposal Templates</a>
                     </li>
                 </ul>
                 <div class="navbar-nav">
                     {% if authenticated %}
-                        <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+                        <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary">Logout</a>
                     {% else %}
-                        <a href="{{ url_for('login') }}" class="btn btn-primary">Login with Google</a>
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login with Google</a>
                     {% endif %}
                 </div>
             </div>
