@@ -180,24 +180,34 @@ def create_proposal():
                 
                 line_items_text += f"\n**Total: ${total_cost:.2f}**"
                 
-                # Basic template with customer info and line items
-                raw_proposal = f"""# Proposal for {customer.get('name', 'Customer')}
-
-## Customer Information
-- **Name:** {customer.get('name', 'Unknown')}
-- **Phone:** {customer.get('phone', 'Unknown')}
-- **Email:** {customer.get('email', 'Unknown')}
-- **Address:** {customer.get('address', 'Unknown')}
-- **Project Address:** {customer.get('project_address', 'Same as above')}
-
-## Project Details
-{project_details.get('notes', 'No additional notes')}
-
-## Line Items
-{line_items_text}
-
-Thank you for your business!
-"""
+                # Use the template from default_template.json
+                # First, prepare replacement values
+                customer_name = customer.get('name', 'Customer')
+                project_scope = project_details.get('notes', 'home improvement project')
+                total_cost_formatted = f"${total_cost:.2f}"
+                start_date = "as soon as possible"  # This could be configurable in the future
+                
+                # Now use the default template and replace placeholders
+                raw_proposal = default_template
+                
+                # Replace common placeholders in the template
+                raw_proposal = raw_proposal.replace("[Homeowner's Name]", customer_name)
+                raw_proposal = raw_proposal.replace("[brief project scope", project_scope)
+                raw_proposal = raw_proposal.replace("[$XX,XXX]", total_cost_formatted)
+                raw_proposal = raw_proposal.replace("[start date]", start_date)
+                
+                # Append line items to the proposal
+                raw_proposal += "\n\n## Project Details\n\n"
+                raw_proposal += f"Project Address: {customer.get('project_address', 'Same as customer address')}\n\n"
+                raw_proposal += "## Line Items\n\n"
+                raw_proposal += line_items_text
+                
+                # Add contact information at the end
+                raw_proposal += "\n\nContact Details:\n\n"
+                raw_proposal += f"- Name: {customer.get('name', 'Unknown')}\n"
+                raw_proposal += f"- Phone: {customer.get('phone', 'Unknown')}\n"
+                raw_proposal += f"- Email: {customer.get('email', 'Unknown')}\n"
+                raw_proposal += f"- Address: {customer.get('address', 'Unknown')}\n"
                 # Store in session for later use
                 session['proposal_content'] = raw_proposal
                 session.modified = True
@@ -257,24 +267,34 @@ Thank you for your business!
             
             line_items_text += f"\n**Total: ${total_cost:.2f}**"
             
-            # Basic template with customer info and line items
-            raw_proposal = f"""# Proposal for {customer.get('name', 'Customer')}
-
-## Customer Information
-- **Name:** {customer.get('name', 'Unknown')}
-- **Phone:** {customer.get('phone', 'Unknown')}
-- **Email:** {customer.get('email', 'Unknown')}
-- **Address:** {customer.get('address', 'Unknown')}
-- **Project Address:** {customer.get('project_address', 'Same as above')}
-
-## Project Details
-{project_details.get('notes', 'No additional notes')}
-
-## Line Items
-{line_items_text}
-
-Thank you for your business!
-"""
+            # Use the template from default_template.json
+            # First, prepare replacement values
+            customer_name = customer.get('name', 'Customer')
+            project_scope = project_details.get('notes', 'home improvement project')
+            total_cost_formatted = f"${total_cost:.2f}"
+            start_date = "as soon as possible"  # This could be configurable in the future
+            
+            # Now use the default template and replace placeholders
+            raw_proposal = default_template
+            
+            # Replace common placeholders in the template
+            raw_proposal = raw_proposal.replace("[Homeowner's Name]", customer_name)
+            raw_proposal = raw_proposal.replace("[brief project scope", project_scope)
+            raw_proposal = raw_proposal.replace("[$XX,XXX]", total_cost_formatted)
+            raw_proposal = raw_proposal.replace("[start date]", start_date)
+            
+            # Append line items to the proposal
+            raw_proposal += "\n\n## Project Details\n\n"
+            raw_proposal += f"Project Address: {customer.get('project_address', 'Same as customer address')}\n\n"
+            raw_proposal += "## Line Items\n\n"
+            raw_proposal += line_items_text
+            
+            # Add contact information at the end
+            raw_proposal += "\n\nContact Details:\n\n"
+            raw_proposal += f"- Name: {customer.get('name', 'Unknown')}\n"
+            raw_proposal += f"- Phone: {customer.get('phone', 'Unknown')}\n"
+            raw_proposal += f"- Email: {customer.get('email', 'Unknown')}\n"
+            raw_proposal += f"- Address: {customer.get('address', 'Unknown')}\n"
             # Store in session for later use
             session['proposal_content'] = raw_proposal
             session.modified = True
@@ -332,7 +352,7 @@ def save_to_drive():
             return redirect(url_for('estimates.estimate'))
         
         customer = estimate_result['customer']
-        customer_name = customer.get('customer_name', 'Unknown')
+        customer_name = customer.get('name', 'Unknown')
         project_address = customer.get('project_address', 'Unknown')
         
         # Create folder structure in Google Drive
@@ -359,8 +379,8 @@ def save_to_drive():
         values = [
             [
                 customer_name,
-                customer.get('customer_email', ''),
-                customer.get('customer_phone', ''),
+                customer.get('email', ''),
+                customer.get('phone', ''),
                 project_address,
                 f"${total_cost:.2f}",
                 doc_info.get('doc_url', '')
