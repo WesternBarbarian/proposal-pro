@@ -66,8 +66,8 @@ Session(app)
 # Initialize Markdown
 markdown = markdown2.Markdown()
 
-# Register markdown filter
-app.jinja_env.filters['markdown'] = lambda text: Markup(markdown.convert(text))
+# Register markdown filter with None handling
+app.jinja_env.filters['markdown'] = lambda text: Markup(markdown.convert(text)) if text else Markup('')
 
 # Initialize CSRF protection
 csrf = CSRFProtect()

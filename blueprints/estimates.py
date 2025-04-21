@@ -152,10 +152,56 @@ def create_proposal():
             return redirect(url_for('estimates.estimate'))
             
         # Load proposal templates
-        templates = load_templates()
-        logging.info(f"Loaded {len(templates)} proposal templates")
+        templates, is_custom = load_templates()
+        logging.info(f"Loaded {len(templates)} proposal templates (custom: {is_custom})")
         
         try:
+            # Generate a default proposal using the first template
+            logging.info("Generating default proposal from template")
+            default_proposal = ""
+            raw_proposal = ""
+            
+            if templates and len(templates) > 0:
+                # Get the first template as default
+                default_template = templates[0].get('text', '')
+                
+                # Replace placeholders with actual data
+                customer = estimate_result['customer']
+                project_details = estimate_result['project_details']
+                line_items = estimate_result['line_items']
+                total_cost = estimate_result['total_cost']
+                
+                # Format line items as markdown table
+                line_items_text = "| Item | Quantity | Unit | Price | Total |\n"
+                line_items_text += "|------|----------|------|-------|-------|\n"
+                
+                for item in line_items['lines']:
+                    line_items_text += f"| {item['name']} | {item['quantity']} | {item['unit']} | ${item['price']:.2f} | ${item['total']:.2f} |\n"
+                
+                line_items_text += f"\n**Total: ${total_cost:.2f}**"
+                
+                # Basic template with customer info and line items
+                raw_proposal = f"""# Proposal for {customer.get('name', 'Customer')}
+
+## Customer Information
+- **Name:** {customer.get('name', 'Unknown')}
+- **Phone:** {customer.get('phone', 'Unknown')}
+- **Email:** {customer.get('email', 'Unknown')}
+- **Address:** {customer.get('address', 'Unknown')}
+- **Project Address:** {customer.get('project_address', 'Same as above')}
+
+## Project Details
+{project_details.get('notes', 'No additional notes')}
+
+## Line Items
+{line_items_text}
+
+Thank you for your business!
+"""
+                # Store in session for later use
+                session['proposal_content'] = raw_proposal
+                session.modified = True
+            
             # Return the proposal.html template with data from session
             logging.info("Rendering proposal.html with session data")
             return render_template('proposal.html', 
@@ -164,6 +210,8 @@ def create_proposal():
                             line_items=estimate_result['line_items'],
                             total_cost=estimate_result['total_cost'],
                             templates=templates,
+                            proposal=raw_proposal,  # Provide the processed template
+                            raw_proposal=raw_proposal,  # Raw markdown for editing
                             authenticated=True)
         except Exception as e:
             logging.error(f"Error rendering proposal template: {str(e)}", exc_info=True)
@@ -181,10 +229,56 @@ def create_proposal():
         return redirect(url_for('estimates.estimate'))
     
     # Load proposal templates
-    templates = load_templates()
-    logging.info(f"Loaded {len(templates)} proposal templates")
+    templates, is_custom = load_templates()
+    logging.info(f"Loaded {len(templates)} proposal templates (custom: {is_custom})")
     
     try:
+        # Generate a default proposal using the first template
+        logging.info("Generating default proposal from template for GET request")
+        default_proposal = ""
+        raw_proposal = ""
+        
+        if templates and len(templates) > 0:
+            # Get the first template as default
+            default_template = templates[0].get('text', '')
+            
+            # Replace placeholders with actual data
+            customer = estimate_result['customer']
+            project_details = estimate_result['project_details']
+            line_items = estimate_result['line_items']
+            total_cost = estimate_result['total_cost']
+            
+            # Format line items as markdown table
+            line_items_text = "| Item | Quantity | Unit | Price | Total |\n"
+            line_items_text += "|------|----------|------|-------|-------|\n"
+            
+            for item in line_items['lines']:
+                line_items_text += f"| {item['name']} | {item['quantity']} | {item['unit']} | ${item['price']:.2f} | ${item['total']:.2f} |\n"
+            
+            line_items_text += f"\n**Total: ${total_cost:.2f}**"
+            
+            # Basic template with customer info and line items
+            raw_proposal = f"""# Proposal for {customer.get('name', 'Customer')}
+
+## Customer Information
+- **Name:** {customer.get('name', 'Unknown')}
+- **Phone:** {customer.get('phone', 'Unknown')}
+- **Email:** {customer.get('email', 'Unknown')}
+- **Address:** {customer.get('address', 'Unknown')}
+- **Project Address:** {customer.get('project_address', 'Same as above')}
+
+## Project Details
+{project_details.get('notes', 'No additional notes')}
+
+## Line Items
+{line_items_text}
+
+Thank you for your business!
+"""
+            # Store in session for later use
+            session['proposal_content'] = raw_proposal
+            session.modified = True
+        
         # Return the proposal.html template with data from session
         logging.info("Rendering proposal.html with session data")
         return render_template('proposal.html', 
@@ -193,6 +287,8 @@ def create_proposal():
                             line_items=estimate_result['line_items'],
                             total_cost=estimate_result['total_cost'],
                             templates=templates,
+                            proposal=raw_proposal,  # Provide the processed template
+                            raw_proposal=raw_proposal,  # Raw markdown for editing
                             authenticated=True)
     except Exception as e:
         logging.error(f"Error rendering proposal template: {str(e)}", exc_info=True)
