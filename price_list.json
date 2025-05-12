@@ -11,10 +11,6 @@
         "unit": "square foot",
         "price": 1.75
     },
-    "Paint brush": {
-        "unit": "brush",
-        "price": 3.0
-    },
     "Flooring Installation": {
         "unit": "square foot",
         "price": 3.0
