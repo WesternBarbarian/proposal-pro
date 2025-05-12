@@ -1,0 +1,54 @@
+{
+    "customer": {
+        "name": "Jimmy Dean",
+        "phone": "unknown",
+        "email": "unknown",
+        "address": "123 Hotdog lane, Manhattan KS, 66502",
+        "project_address": "same"
+    },
+    "project_details": {
+        "notes": "Basement Renovation",
+        "details": [
+            {
+                "item": "labor",
+                "quantity": 20
+            },
+            {
+                "item": "drywall",
+                "quantity": 400
+            },
+            {
+                "item": "painting",
+                "quantity": 400
+            }
+        ]
+    },
+    "line_items": {
+        "lines": [
+            {
+                "name": "General Labor",
+                "unit": "hour",
+                "price": 45.0,
+                "quantity": 20,
+                "total": 900.0
+            },
+            {
+                "name": "drywall",
+                "unit": "square foot",
+                "price": 2.5,
+                "quantity": 400,
+                "total": 1000.0
+            },
+            {
+                "name": "painting",
+                "unit": "square foot",
+                "price": 1.75,
+                "quantity": 400,
+                "total": 700.0
+            }
+        ],
+        "sub_total": 2600.0
+    },
+    "total_cost": 2600.0,
+    "estimate_id": "fb2e6560-6ec3-484d-b5ee-f05bab6b158e"
+}
