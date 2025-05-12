@@ -1,0 +1,43 @@
+{
+    "customer": {
+        "name": "John Ivy",
+        "phone": "203-123-4059",
+        "email": "unknown",
+        "address": "1223 Elm Street, Manhattan KS, 66502",
+        "project_address": "same"
+    },
+    "project_details": {
+        "notes": "Yard Work",
+        "details": [
+            {
+                "item": "trucks trash removal",
+                "quantity": 2
+            },
+            {
+                "item": "labor",
+                "quantity": 20
+            }
+        ]
+    },
+    "line_items": {
+        "lines": [
+            {
+                "name": "Junk Removal",
+                "unit": "truckload",
+                "price": 250.0,
+                "quantity": 2,
+                "total": 500.0
+            },
+            {
+                "name": "General Labor",
+                "unit": "hour",
+                "price": 45.0,
+                "quantity": 20,
+                "total": 900.0
+            }
+        ],
+        "sub_total": 1400.0
+    },
+    "total_cost": 1400.0,
+    "estimate_id": "6383edff-5708-4da8-a7b5-122baa3b215b"
+}
