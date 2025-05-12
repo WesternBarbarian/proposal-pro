@@ -355,15 +355,17 @@ def generate_proposal(project_details: dict, customer: dict, line_items: Line_It
     # Join with clear separators
     template_examples = "\n\n=== EXAMPLE PROPOSAL ===\n\n".join(processed_templates)
     
-    # Get prompt from prompt manager
+    # Get prompts from prompt manager
     prompt_manager = get_prompt_manager()
-    prompt = prompt_manager.get_user_prompt("generate_proposal",
-                                          project_details=project_details,
-                                          line_items=line_items,
-                                          customer_name=customer['name'],
-                                          template_examples=template_examples)
+    user_prompt = prompt_manager.get_user_prompt("generate_proposal",
+                                            project_details=project_details,
+                                            line_items=line_items,
+                                            customer_name=customer['name'],
+                                            template_examples=template_examples)
     
-    if not prompt:
+    sys_instruct = prompt_manager.get_system_instruction("generate_proposal")
+    
+    if not user_prompt:
         logger.error("Failed to load prompt for proposal generation")
         return "Error: Could not generate proposal due to missing prompt template."
 
@@ -372,6 +374,9 @@ def generate_proposal(project_details: dict, customer: dict, line_items: Line_It
     
     response = client.models.generate_content(
         model=model,
-        contents=prompt,
+        contents=user_prompt,
+        config = types.GenerateContentConfig(
+            system_instruction=sys_instruct
+        ),
     )
     return response.text
