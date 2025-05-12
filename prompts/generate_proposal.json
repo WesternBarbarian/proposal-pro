@@ -1,0 +1,6 @@
+
+{
+    "name": "generate_proposal",
+    "description": "Prompt for generating a proposal based on project details",
+    "user_prompt": "You are an estimator writing a new proposal for a client. Please proceed\nstep-by-step:\n\n1. Please write the project analysis based on these notes:\n{project_details} and this estimate: {line_items}. It is OK if\nsome amounts are zero.\n2. Based on the analysis above write an estimate to {customer_name}. Do not make up any details. Use only the information from the source files and analysis above. Prepare the proposal using the following examples to determine the voice, tone, and length of the proposal (even if it seems silly):\n\n{template_examples}\n\n--\nDo not use markdown. Simply use plain text."
+}

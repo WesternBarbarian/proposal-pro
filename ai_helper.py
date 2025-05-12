@@ -207,7 +207,10 @@ class Line_Items(BaseModel):
 
 def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
     import logging
+    from prompt_manager import get_prompt_manager
+    
     logger = logging.getLogger(__name__)
+    prompt_manager = get_prompt_manager()
     
     # First, try to use direct mapping for items if they exist in the price list
     # This will handle the case when API returns are not being processed correctly
@@ -268,126 +271,22 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
     
     # If direct lookup didn't work or didn't find all items, fall back to AI
     logger.debug("Falling back to AI for price lookup")
-    sys_instruct="""##Role: You are a pricing specialist.
-    You look up the price of items from the provided list.
-    ##Task: Look up prices.
-    ##Task Guidance: Items may have alternative names. When you know what the user means, look up the price for that item.
-    If you do not know what an item is, or if it is not in the list, enter the price as zero in your response.
-    If you are provided with a quantity, return the quantity for the item in the json response.
-    If you are not provided with a quantity put zero. DO NOT GUESS ABOUT QUANTITY.
-    Carefully review the users input and make sure you know the quantity for each item.
-    IMPORTANT: Match the exact spelling and capitalization of the items in the user's request.
-    ### Example 1:
-    {
-      "role": "user",
-      "parts": [
-        "I need 3 drills, work lights, and 1 ladder."
-      ]
-    },
-    {
-      "role": "model",
-      "parts": [
-        json
-        [
-          {
-            "item": "Cordless Drill",
-            "quantity": "3",
-            "price": "79.99"
-          },
-          {
-            "item": "LED Work Light",
-            "quantity": "unknown",
-            "price": "39.99"
-          },
-          {
-            "item": "Ladder (6ft)",
-            "quantity": "1",
-            "price": "89.99"
-          }
-        ]
-      ]
-    }
-
-    ### Example 2:
-    {
-      "role": "user",
-      "parts": [
-        "two leaf blowers, drills, and ladders."
-      ]
-    },
-    {
-      "role": "model",
-      "parts": [
-        json
-        [
-          {
-            "item": "Leaf Blower",
-            "quantity": "2",
-            "price": "unknown"
-          },
-          {
-            "item": "Cordless Drill",
-            "quantity": "unknown",
-            "price": "79.99"
-          },
-          {
-            "item": "Ladder (6ft)",
-            "quantity": "unknown",
-            "price": "89.99"
-          }
-        ]
-      ]
-    }
-
-    ### Example 3:
-    {
-      "role": "user",
-      "parts": [
-        "1 stud finder, 3 ceiling fans, a ladder, a circular saw, and work lights."
-      ]
-    },
-    {
-      "role": "model",
-      "parts": [
-        json
-        [
-          {
-            "item": "Stud Finder",
-            "quantity": "1",
-            "price": "34.99"
-          },
-          {
-            "item": "Ceiling Fan",
-            "quantity": "3",
-            "price": "149.99"
-          },
-          {
-            "item": "Ladder (6ft)",
-            "quantity": "1",
-            "price": "89.99"
-          },
-          {
-            "item": "Circular Saw",
-            "quantity": "1",
-            "price": "129.99"
-          },
-          {
-            "item": "LED Work Light",
-            "quantity": "unknown",
-            "price": "39.99"
-          }
-        ]
-      ]
-    }
-    """
-
-    user_request = project_details
-    prompt = f"Look up the prices from the {price_list} for the items in {user_request}"
     
-    logger.debug(f"Sending prompt to Gemini API: {prompt}")
+    # Get prompts from prompt manager
+    sys_instruct = prompt_manager.get_system_instruction("lookup_prices")
+    user_prompt = prompt_manager.get_user_prompt("lookup_prices", 
+                                               price_list=price_list, 
+                                               user_request=project_details)
+    
+    if not sys_instruct or not user_prompt:
+        logger.error("Failed to load prompts for price lookup")
+        # Fallback to empty line items if prompts can't be loaded
+        return Line_Items(lines=[])
+    
+    logger.debug(f"Sending prompt to Gemini API: {user_prompt}")
     response = client.models.generate_content(
         model=model,
-        contents=prompt,
+        contents=user_prompt,
         config = types.GenerateContentConfig(
             system_instruction=sys_instruct,
             response_mime_type='application/json',
@@ -426,6 +325,8 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
 
 #Generate proposal
 def generate_proposal(project_details: dict, customer: dict, line_items: Line_Items, templates: list[str]) -> str:
+    from prompt_manager import get_prompt_manager
+    
     # Validate input parameters
     if not project_details:
         logger.warning("Empty project details provided to generate_proposal")
@@ -454,21 +355,17 @@ def generate_proposal(project_details: dict, customer: dict, line_items: Line_It
     # Join with clear separators
     template_examples = "\n\n=== EXAMPLE PROPOSAL ===\n\n".join(processed_templates)
     
-    prompt = f"""
-    You are an estimator writing a new proposal for a client. Please proceed
-    step-by-step:
-
-    1. Please write the project analysis based on these notes:
-    {project_details} and this estimate: {line_items}. It is OK if
-    some amounts are zero.
-    2. Based on the analysis above write an estimate to {customer['name']}. Do not make up any details. Use only the information from the source files and analysis above. Prepare the proposal using the following examples to determine the voice, tone, and length of the proposal (even if it seems silly):
-
-    {template_examples}
-
---
-    Do not use markdown. Simply use plain text.
-    """
-
+    # Get prompt from prompt manager
+    prompt_manager = get_prompt_manager()
+    prompt = prompt_manager.get_user_prompt("generate_proposal",
+                                          project_details=project_details,
+                                          line_items=line_items,
+                                          customer_name=customer['name'],
+                                          template_examples=template_examples)
+    
+    if not prompt:
+        logger.error("Failed to load prompt for proposal generation")
+        return "Error: Could not generate proposal due to missing prompt template."
 
     # Debug log template examples to verify format
     logger.debug(f"Template examples being sent to AI: {template_examples}")

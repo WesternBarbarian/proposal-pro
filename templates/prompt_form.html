@@ -1,0 +1,71 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">{{ 'Edit' if mode == 'edit' else 'New' }} Prompt</h2>
+    
+    <form method="POST" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <div class="mb-3">
+            <label for="name" class="form-label">Prompt Name</label>
+            <input type="text" class="form-control" id="name" name="name" value="{{ form.name.data or '' }}" 
+                   {{ 'readonly' if mode == 'edit' else '' }} required>
+            {% if form.name.errors %}
+            <div class="invalid-feedback d-block">
+                {% for error in form.name.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="form-text">This will be the filename (without .json extension)</div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <input type="text" class="form-control" id="description" name="description" value="{{ form.description.data or '' }}">
+            {% if form.description.errors %}
+            <div class="invalid-feedback d-block">
+                {% for error in form.description.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="system_instruction" class="form-label">System Instruction</label>
+            <textarea class="form-control" id="system_instruction" name="system_instruction" rows="8">{{ form.system_instruction.data or '' }}</textarea>
+            {% if form.system_instruction.errors %}
+            <div class="invalid-feedback d-block">
+                {% for error in form.system_instruction.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="form-text">Optional. System instructions provide context to the AI.</div>
+        </div>
+        
+        <div class="mb-3">
+            <label for="user_prompt" class="form-label">User Prompt Template</label>
+            <textarea class="form-control" id="user_prompt" name="user_prompt" rows="10" required>{{ form.user_prompt.data or '' }}</textarea>
+            {% if form.user_prompt.errors %}
+            <div class="invalid-feedback d-block">
+                {% for error in form.user_prompt.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="form-text">
+                Use placeholders like {variable_name} for dynamic content. These will be replaced at runtime.
+            </div>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('prompts.list_prompts') }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Prompt</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

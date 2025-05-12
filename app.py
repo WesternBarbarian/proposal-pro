@@ -21,6 +21,7 @@ from blueprints.auth import auth_bp
 from blueprints.estimates import estimates_bp
 from blueprints.pricing import pricing_bp
 from blueprints.proposals import proposals_bp
+from blueprints.prompts import prompts_bp
 from blueprints.admin import admin_bp, perform_session_cleanup
 
 # Configure logging
@@ -78,6 +79,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(estimates_bp)
 app.register_blueprint(pricing_bp)
 app.register_blueprint(proposals_bp)
+app.register_blueprint(prompts_bp)
 app.register_blueprint(admin_bp)
 
 # Start the cleanup thread
