@@ -1,13 +1,30 @@
-
-# Environment variables
+# Environment variables and secrets
 .env
 .env.local
-.env.*.local
+*.env
 
-# Python
+# Session files
+flask_session/
+
+# Python cache files
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Estimate files
+estimate_*.json
+
+# OAuth credentials
+client_secret*.json
+
+# Log files
+*.log
+
+# IDE specific files
+.vscode/
+.idea/
+
+# Python
 *.so
 .Python
 build/
@@ -29,7 +46,6 @@ wheels/
 # Flask
 instance/
 .webassets-cache
-flask_session/
 
 # Project specific
 price_list.json
@@ -37,8 +53,6 @@ custom_templates.json
 
 
 # Editor directories and files
-.idea
-.vscode
 *.suo
 *.ntvs*
 *.njsproj
