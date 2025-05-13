@@ -114,15 +114,12 @@ if __name__ == '__main__':
     # Initialize database connection
     init_db(app)
 
-    # Update allowed users and domains from database
+    # Update allowed users from database
     with app.app_context():
         try:
             config.update_allowed_users_from_db()
             app.logger.info("Loaded allowed users from database")
-            
-            config.update_allowed_domains_from_db()
-            app.logger.info("Loaded allowed domains from database")
         except Exception as e:
-            app.logger.error(f"Error loading auth settings from database: {e}")
+            app.logger.error(f"Error loading allowed users from database: {e}")
 
     app.run(host='0.0.0.0', port=5000, debug=True)

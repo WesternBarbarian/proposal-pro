@@ -43,26 +43,6 @@ class BaseConfig:
             logging.error(f"Failed to update allowed users from database: {e}")
             # Keep using default ALLOWED_USERS
     
-    def update_allowed_domains_from_db(self):
-        """Update ALLOWED_DOMAINS from database tenants based on plan level"""
-        try:
-            from db.tenants import get_allowed_domains
-            from flask import current_app
-            
-            # Get domains from tenants with super/basic plan
-            tenant_domains = get_allowed_domains()
-            
-            if tenant_domains:
-                # Add to default domains without duplicates
-                self.ALLOWED_DOMAINS = list(set(tenant_domains + self.ALLOWED_DOMAINS))
-                
-                if hasattr(current_app, 'logger') and current_app.logger:
-                    current_app.logger.info(f"Updated ALLOWED_DOMAINS from database: {len(self.ALLOWED_DOMAINS)} domains")
-        except Exception as e:
-            import logging
-            logging.error(f"Failed to update allowed domains from database: {e}")
-            # Keep using default ALLOWED_DOMAINS
-    
     # Google OAuth settings
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID")
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_OAUTH_CLIENT_SECRET")
