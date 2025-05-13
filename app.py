@@ -74,6 +74,10 @@ app.jinja_env.filters['markdown'] = lambda text: Markup(markdown.convert(text)) 
 csrf = CSRFProtect()
 csrf.init_app(app)
 
+# Import database modules
+from db.connection import init_app as init_db
+from db.commands import register_commands as register_db_commands
+
 # Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(estimates_bp)
@@ -81,6 +85,10 @@ app.register_blueprint(pricing_bp)
 app.register_blueprint(proposals_bp)
 app.register_blueprint(prompts_bp)
 app.register_blueprint(admin_bp)
+
+# Initialize database
+init_db(app)
+register_db_commands(app)
 
 # Start the cleanup thread
 cleanup_thread = threading.Thread(target=cleanup_session_files, daemon=True)
