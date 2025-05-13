@@ -30,6 +30,39 @@ def create_tables():
         execute_query(create_tenants_table, fetch=False)
         logger.info("Tenants table created successfully")
         
+        # Create users table with user_role ENUM
+        create_user_role_enum = """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+                CREATE TYPE user_role AS ENUM ('SUPER_ADMIN','TENANT_ADMIN', 'STANDARD_USER');
+            END IF;
+        END$$;
+        """
+        
+        create_users_table = """
+        CREATE TABLE IF NOT EXISTS users (
+          id               UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
+          tenant_id        UUID      NOT NULL REFERENCES tenants(id),
+          google_oauth_id  TEXT      NOT NULL UNIQUE,
+          email            TEXT      NOT NULL,
+          name             TEXT,
+          role             user_role NOT NULL DEFAULT 'STANDARD_USER',
+          created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+        
+        -- ensure no two users share the same email within a tenant:
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_users_tenant_email ON users(tenant_id, email);
+        CREATE INDEX IF NOT EXISTS idx_users_tenant_id ON users(tenant_id);
+        """
+        
+        # First create the ENUM type if it doesn't exist
+        execute_query(create_user_role_enum, fetch=False)
+        # Then create the users table
+        execute_query(create_users_table, fetch=False)
+        logger.info("Users table created successfully")
+        
         return True
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
