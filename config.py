@@ -18,10 +18,30 @@ class BaseConfig:
     MAX_SESSION_FILES = 20
     SESSION_CLEANUP_THRESHOLD = 86400  # 24 hours in seconds
     
-    # Authentication settings
-    ALLOWED_USERS = ['jason.matthews@cyborguprising.com']
+    # Authentication settings - default values
+    ALLOWED_USERS = ['jason.matthews@cyborguprising.com']  # Will be updated from DB
     ALLOWED_DOMAINS = ['cyborguprising.com']
     ADMIN_USERS = ['jason.matthews@cyborguprising.com']
+    
+    def update_allowed_users_from_db(self):
+        """Update ALLOWED_USERS from database tenants"""
+        try:
+            from db.tenants import get_allowed_tenants
+            from flask import current_app
+            
+            # Get Flask app context if available, otherwise continue with defaults
+            tenant_emails = get_allowed_tenants()
+            
+            if tenant_emails:
+                # Keep original admin users in the allowed list
+                self.ALLOWED_USERS = list(set(tenant_emails + self.ADMIN_USERS))
+                
+                if hasattr(current_app, 'logger') and current_app.logger:
+                    current_app.logger.info(f"Updated ALLOWED_USERS from database: {len(self.ALLOWED_USERS)} users")
+        except Exception as e:
+            import logging
+            logging.error(f"Failed to update allowed users from database: {e}")
+            # Keep using default ALLOWED_USERS
     
     # Google OAuth settings
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_OAUTH_CLIENT_ID")

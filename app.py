@@ -36,12 +36,12 @@ def cleanup_session_files():
         try:
             # Sleep first to allow the app to start properly
             time.sleep(CLEANUP_INTERVAL)
-            
+
             # Run the cleanup
             deleted = perform_session_cleanup()
             if deleted > 0:
                 logging.info(f"Background cleanup removed {deleted} old session files")
-                
+
         except Exception as e:
             logging.error(f"Error in session cleanup thread: {str(e)}")
 
@@ -105,4 +105,21 @@ def index():
     return render_template('index.html', authenticated=authenticated)
 
 if __name__ == '__main__':
+    app = Flask(__name__)
+
+    # Load configuration
+    config = get_config()
+    app.config.from_object(config)
+
+    # Initialize database connection
+    init_db(app)
+
+    # Update allowed users from database
+    with app.app_context():
+        try:
+            config.update_allowed_users_from_db()
+            app.logger.info("Loaded allowed users from database")
+        except Exception as e:
+            app.logger.error(f"Error loading allowed users from database: {e}")
+
     app.run(host='0.0.0.0', port=5000, debug=True)
