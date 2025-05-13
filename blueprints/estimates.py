@@ -156,58 +156,63 @@ def create_proposal():
         logging.info(f"Loaded {len(templates)} proposal templates (custom: {is_custom})")
 
         try:
-            # Generate a default proposal using the first template
-            logging.info("Generating default proposal from template")
-            default_proposal = ""
-            raw_proposal = ""
-
-            if templates and len(templates) > 0:
-                # Get the first template as default
-                default_template = templates[0]  # Templates are already strings
-
-                # Replace placeholders with actual data
-                customer = estimate_result['customer']
-                project_details = estimate_result['project_details']
-                line_items = estimate_result['line_items']
-                total_cost = estimate_result['total_cost']
-
-                # Format line items as markdown table
-                line_items_text = "| Item | Quantity | Unit | Price | Total |\n"
-                line_items_text += "|------|----------|------|-------|-------|\n"
-
-                for item in line_items['lines']:
-                    line_items_text += f"| {item['name']} | {item['quantity']} | {item['unit']} | ${item['price']:.2f} | ${item['total']:.2f} |\n"
-
-                line_items_text += f"\n**Total: ${total_cost:.2f}**"
-
-                # Use the template from default_template.json
-                # First, prepare replacement values
+            # Generate a proposal using AI helper
+            logging.info("Generating proposal using AI helper")
+            
+            customer = estimate_result['customer']
+            project_details = estimate_result['project_details']
+            line_items = estimate_result['line_items']
+            
+            # Import generate_proposal from ai_helper
+            from ai_helper import generate_proposal
+            
+            try:
+                # Call the AI helper function to generate the proposal
+                raw_proposal = generate_proposal(
+                    project_details=project_details,
+                    customer=customer,
+                    line_items=line_items,
+                    templates=templates
+                )
+                
+                logging.info("AI proposal generated successfully")
+                
+                if not raw_proposal:
+                    logging.warning("AI generated an empty proposal, falling back to template")
+                    # Fallback to a simple template if AI fails
+                    customer_name = customer.get('name', 'Customer')
+                    total_cost = estimate_result['total_cost']
+                    total_cost_formatted = f"${total_cost:.2f}"
+                    
+                    raw_proposal = f"# Project Proposal for {customer_name}\n\n"
+                    raw_proposal += f"Total Cost: {total_cost_formatted}\n\n"
+                    raw_proposal += "## Project Details\n\n"
+                    raw_proposal += f"Project Address: {customer.get('project_address', 'Same as customer address')}\n\n"
+                    
+                    # Format line items as markdown table
+                    raw_proposal += "## Line Items\n\n"
+                    raw_proposal += "| Item | Quantity | Unit | Price | Total |\n"
+                    raw_proposal += "|------|----------|------|-------|-------|\n"
+                    
+                    for item in line_items['lines']:
+                        raw_proposal += f"| {item['name']} | {item['quantity']} | {item['unit']} | ${item['price']:.2f} | ${item['total']:.2f} |\n"
+                    
+                    raw_proposal += f"\n**Total: ${total_cost:.2f}**"
+                    
+                    # Add contact information
+                    raw_proposal += "\n\nContact Details:\n\n"
+                    raw_proposal += f"- Name: {customer.get('name', 'Unknown')}\n"
+                    raw_proposal += f"- Phone: {customer.get('phone', 'Unknown')}\n"
+                    raw_proposal += f"- Email: {customer.get('email', 'Unknown')}\n"
+                    raw_proposal += f"- Address: {customer.get('address', 'Unknown')}\n"
+            except Exception as e:
+                logging.error(f"Error generating AI proposal: {str(e)}", exc_info=True)
+                flash(f"Error generating AI proposal: {str(e)}", "warning")
+                
+                # Fallback to simple template
                 customer_name = customer.get('name', 'Customer')
-                project_scope = project_details.get('notes', 'home improvement project')
-                total_cost_formatted = f"${total_cost:.2f}"
-                start_date = "as soon as possible"  # This could be configurable in the future
-
-                # Now use the default template and replace placeholders
-                raw_proposal = default_template
-
-                # Replace common placeholders in the template
-                raw_proposal = raw_proposal.replace("[Homeowner's Name]", customer_name)
-                raw_proposal = raw_proposal.replace("[brief project scope", project_scope)
-                raw_proposal = raw_proposal.replace("[$XX,XXX]", total_cost_formatted)
-                raw_proposal = raw_proposal.replace("[start date]", start_date)
-
-                # Append line items to the proposal
-                raw_proposal += "\n\n## Project Details\n\n"
-                raw_proposal += f"Project Address: {customer.get('project_address', 'Same as customer address')}\n\n"
-                raw_proposal += "## Line Items\n\n"
-                raw_proposal += line_items_text
-
-                # Add contact information at the end
-                raw_proposal += "\n\nContact Details:\n\n"
-                raw_proposal += f"- Name: {customer.get('name', 'Unknown')}\n"
-                raw_proposal += f"- Phone: {customer.get('phone', 'Unknown')}\n"
-                raw_proposal += f"- Email: {customer.get('email', 'Unknown')}\n"
-                raw_proposal += f"- Address: {customer.get('address', 'Unknown')}\n"
+                total_cost = estimate_result['total_cost']
+                raw_proposal = f"# Project Proposal for {customer_name}\n\nTotal Cost: ${total_cost:.2f}"
                 # Store in session for later use
                 session['proposal_content'] = raw_proposal
                 session.modified = True
