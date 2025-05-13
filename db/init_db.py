@@ -37,8 +37,11 @@ def create_tables():
 
 if __name__ == "__main__":
     # When run directly, create the tables
-    success = create_tables()
-    if success:
-        print("Database tables created successfully")
-    else:
-        print("Failed to create database tables")
+    # We need to import and use the Flask app context
+    from app import app
+    with app.app_context():
+        success = create_tables()
+        if success:
+            print("Database tables created successfully")
+        else:
+            print("Failed to create database tables")
