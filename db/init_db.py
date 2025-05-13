@@ -44,7 +44,6 @@ def create_tables():
         CREATE TABLE IF NOT EXISTS users (
           id               UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
           tenant_id        UUID      NOT NULL REFERENCES tenants(id),
-          google_oauth_id  TEXT      NOT NULL UNIQUE,
           email            TEXT      NOT NULL,
           name             TEXT,
           role             user_role NOT NULL DEFAULT 'STANDARD_USER',
