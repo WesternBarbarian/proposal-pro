@@ -21,13 +21,15 @@ def is_user_allowed(email):
     
     if last_refresh is None or (now - last_refresh).total_seconds() > refresh_interval:
         try:
-            # Get config object and update allowed users
+            # Get config object and update allowed users and domains
             config = current_app.config
             if hasattr(config, 'update_allowed_users_from_db'):
                 config.update_allowed_users_from_db()
+            if hasattr(config, 'update_allowed_domains_from_db'):
+                config.update_allowed_domains_from_db()
             current_app.last_allowed_users_refresh = now
         except Exception as e:
-            current_app.logger.error(f"Error refreshing allowed users: {e}")
+            current_app.logger.error(f"Error refreshing auth settings: {e}")
     
     # Get allowed users and domains from config
     allowed_users = current_app.config.get('ALLOWED_USERS', [])
