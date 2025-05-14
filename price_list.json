@@ -19,10 +19,6 @@
         "unit": "square foot",
         "price": 5.0
     },
-    "Carpentry": {
-        "unit": "hour",
-        "price": 50.0
-    },
     "Plumbing Repairs": {
         "unit": "hour",
         "price": 75.0
@@ -66,5 +62,9 @@
     "Junk Removal": {
         "unit": "truckload",
         "price": 250.0
+    },
+    "test": {
+        "unit": "package",
+        "price": 12.0
     }
 }
