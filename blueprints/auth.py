@@ -11,9 +11,10 @@ from db.tenants import update_allowed_users_from_db
 auth_bp = Blueprint('auth', __name__, url_prefix='')
 
 def is_user_allowed(email):
-    """Check if user's email is in the allowed list or from an allowed domain."""
+    """Check if user's email is in the allowed list from database."""
     from flask import current_app
     from datetime import datetime
+    from db.tenants import update_allowed_users_from_db
     
     # Periodically refresh the allowed users list (every 5 minutes)
     refresh_interval = 300  # seconds
@@ -22,28 +23,39 @@ def is_user_allowed(email):
     
     if last_refresh is None or (now - last_refresh).total_seconds() > refresh_interval:
         try:
-            # Get config object and update allowed users
-            config = current_app.config
-            if hasattr(config, 'update_allowed_users_from_db'):
-                config.update_allowed_users_from_db()
             current_app.last_allowed_users_refresh = now
         except Exception as e:
-            current_app.logger.error(f"Error refreshing allowed users: {e}")
+            current_app.logger.error(f"Error refreshing allowed users timestamp: {e}")
     
-    # Get allowed users and domains from config
+    # Get allowed users from database query
     allowed_users = update_allowed_users_from_db()
-    allowed_domains = current_app.config.get('ALLOWED_DOMAINS', [])
     
-    return (email in allowed_users or 
-            any(email.endswith('@' + domain) for domain in allowed_domains))
+    # Check if user is in the allowed users list
+    return email in allowed_users
 
 def is_admin_user(email):
     """Check if a user is an admin user with session management permissions."""
     from flask import current_app
+    from db.connection import execute_query
     
-    # Get admin users from config
-    admin_emails = current_app.config.get('ADMIN_USERS', [])
-    return email in admin_emails
+    try:
+        # Query database for admin users (users with role SUPER_ADMIN or TENANT_ADMIN)
+        query = """
+        SELECT email FROM users
+        WHERE role IN ('SUPER_ADMIN', 'TENANT_ADMIN')
+        AND deleted_at IS NULL;
+        """
+        result = execute_query(query)
+        
+        # Extract admin emails from result
+        admin_emails = [user['email'] for user in result if user.get('email')]
+        
+        return email in admin_emails
+    except Exception as e:
+        current_app.logger.error(f"Error checking admin status: {e}")
+        # Fallback to config if database query fails
+        admin_emails = current_app.config.get('ADMIN_USERS', [])
+        return email in admin_emails
 
 def require_auth(f):
     """Simplified authentication decorator that validates users once per session."""

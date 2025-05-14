@@ -9,7 +9,7 @@ deploymentTarget = "autoscale"
 run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
 
 [workflows]
-runButton = "Project"
+runButton = "Flask App"
 
 [[workflows.workflow]]
 name = "Project"
@@ -34,6 +34,15 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "python main.py"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Flask App"
+author = 30852646
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py"
 
 [[ports]]
 localPort = 5000
