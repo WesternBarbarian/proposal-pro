@@ -131,4 +131,9 @@ def create_doc_in_folder(title, content, folder_id):
         body={'requests': requests}
     ).execute()
     
-    return doc_id
+    # Return document info as dictionary
+    doc_url = f"https://docs.google.com/document/d/{doc_id}/edit"
+    return {
+        'id': doc_id,
+        'doc_url': doc_url
+    }
