@@ -5,6 +5,7 @@ from flask import Blueprint, request, redirect, url_for, flash, session, render_
 from functools import wraps
 import requests
 from oauth_config import create_oauth_flow
+from db.tenants import update_allowed_users_from_db
 
 # Register blueprint with url_prefix to match the original routes in app.py.backup
 auth_bp = Blueprint('auth', __name__, url_prefix='')
@@ -30,7 +31,7 @@ def is_user_allowed(email):
             current_app.logger.error(f"Error refreshing allowed users: {e}")
     
     # Get allowed users and domains from config
-    allowed_users = current_app.config.get('ALLOWED_USERS', [])
+    allowed_users = update_allowed_users_from_db()
     allowed_domains = current_app.config.get('ALLOWED_DOMAINS', [])
     
     return (email in allowed_users or 

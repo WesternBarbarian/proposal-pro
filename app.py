@@ -2,7 +2,7 @@ import os
 import logging
 import threading
 import time
-import glob
+
 
 # Allow OAuth over HTTP for development (crucial for OAuth to work in dev environment)
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -23,6 +23,7 @@ from blueprints.pricing import pricing_bp
 from blueprints.proposals import proposals_bp
 from blueprints.prompts import prompts_bp
 from blueprints.admin import admin_bp, perform_session_cleanup
+from db.tenants import update_allowed_users_from_db
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
