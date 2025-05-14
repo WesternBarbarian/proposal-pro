@@ -5,7 +5,7 @@ from flask import Blueprint, request, redirect, url_for, flash, session, render_
 from functools import wraps
 import requests
 from oauth_config import create_oauth_flow
-from db.tenants import update_allowed_users_from_db
+from db.tenants import update_allowed_users_from_db, is_admin_user
 
 # Register blueprint with url_prefix to match the original routes in app.py.backup
 auth_bp = Blueprint('auth', __name__, url_prefix='')
@@ -32,30 +32,6 @@ def is_user_allowed(email):
     
     # Check if user is in the allowed users list
     return email in allowed_users
-
-def is_admin_user(email):
-    """Check if a user is an admin user with session management permissions."""
-    from flask import current_app
-    from db.connection import execute_query
-    
-    try:
-        # Query database for admin users (users with role SUPER_ADMIN or TENANT_ADMIN)
-        query = """
-        SELECT email FROM users
-        WHERE role IN ('SUPER_ADMIN', 'TENANT_ADMIN')
-        AND deleted_at IS NULL;
-        """
-        result = execute_query(query)
-        
-        # Extract admin emails from result
-        admin_emails = [user['email'] for user in result if user.get('email')]
-        
-        return email in admin_emails
-    except Exception as e:
-        current_app.logger.error(f"Error checking admin status: {e}")
-        # Fallback to config if database query fails
-        admin_emails = current_app.config.get('ADMIN_USERS', [])
-        return email in admin_emails
 
 def require_auth(f):
     """Simplified authentication decorator that validates users once per session."""

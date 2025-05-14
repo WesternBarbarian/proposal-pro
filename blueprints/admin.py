@@ -4,7 +4,8 @@ import time
 import logging
 from datetime import datetime
 from flask import Blueprint, request, redirect, url_for, flash, session, render_template, current_app
-from blueprints.auth import require_auth, is_admin_user
+from blueprints.auth import require_auth
+from db.tenants import is_admin_user
 
 admin_bp = Blueprint('admin', __name__)
 
