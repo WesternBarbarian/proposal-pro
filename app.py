@@ -106,13 +106,6 @@ def index():
     return render_template('index.html', authenticated=authenticated)
 
 if __name__ == '__main__':
-    app = Flask(__name__)
-
-    # Load configuration
-    config = get_config()
-    app.config.from_object(config)
-
-    # Initialize database connection
-    init_db(app)
-
+    # Use the existing app that's already configured
+    # with all blueprints and middleware
     app.run(host='0.0.0.0', port=5000, debug=True)
