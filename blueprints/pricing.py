@@ -1,3 +1,4 @@
+
 import os
 import json
 import logging
@@ -7,6 +8,7 @@ from flask_wtf.file import FileField, FileAllowed
 from wtforms import TextAreaField, SubmitField
 from ai_helper import generate_price_list, generate_price_list_from_image
 from blueprints.auth import require_auth
+from db.price_lists import get_price_list, save_price_list
 
 pricing_bp = Blueprint('pricing', __name__)
 
@@ -17,34 +19,22 @@ class PriceListForm(FlaskForm):
     ])
     submit = SubmitField('Generate Price List')
 
-def load_price_list():
-    try:
-        with open('price_list.json', 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_price_list(price_list):
-    if hasattr(price_list, 'prices'):
-        # Convert Items object to dictionary
-        price_dict = {item.item: {"unit": item.unit, "price": item.price} for item in price_list.prices}
-    else:
-        price_dict = price_list
-
-    with open('price_list.json', 'w') as f:
-        json.dump(price_dict, f, indent=4)
-
 @pricing_bp.route('/price-list', methods=['GET'])
 @require_auth
 def price_list():
     form = PriceListForm()
-    prices = load_price_list()
+    # Get user's email from session
+    user_email = session.get('user_email')
+    # Load price list from database for this tenant
+    prices = get_price_list(user_email)
     return render_template('price_list.html', prices=prices, form=form, authenticated=True)
 
 @pricing_bp.route('/generate-price-list', methods=['POST'])
 @require_auth
 def generate_price_list_route():
     try:
+        user_email = session.get('user_email')
+        
         if request.files.get('file') and request.files['file'].filename:
             file = request.files['file']
             temp_path = f"temp_{file.filename}"
@@ -61,10 +51,20 @@ def generate_price_list_route():
             flash('Please provide either a file or price description.', 'error')
             return redirect(url_for('pricing.price_list'))
         
-        # Save the generated price list
-        save_price_list(price_items)
+        # Convert Items object to dictionary if needed
+        if hasattr(price_items, 'prices'):
+            price_dict = {item.item: {"unit": item.unit, "price": item.price} for item in price_items.prices}
+        else:
+            price_dict = price_items
+            
+        # Save the generated price list to database
+        save_result = save_price_list(user_email, price_dict)
         
-        flash('Price list generated and saved successfully!', 'success')
+        if save_result:
+            flash('Price list generated and saved successfully!', 'success')
+        else:
+            flash('Error saving price list to database.', 'error')
+            
         return redirect(url_for('pricing.price_list'))
     except Exception as e:
         logging.error(f"Error generating price list: {str(e)}", exc_info=True)
@@ -74,16 +74,25 @@ def generate_price_list_route():
 @pricing_bp.route('/delete-price', methods=['POST'])
 @require_auth
 def delete_price():
+    user_email = session.get('user_email')
     item_name = request.form.get('item')
+    
     if not item_name:
         flash('Item name is required', 'error')
         return redirect(url_for('pricing.price_list'))
     
-    price_list = load_price_list()
+    # Get current price list
+    price_list = get_price_list(user_email)
+    
     if item_name in price_list:
         del price_list[item_name]
-        save_price_list(price_list)
-        flash('Price deleted successfully', 'success')
+        # Save updated price list
+        save_result = save_price_list(user_email, price_list)
+        
+        if save_result:
+            flash('Price deleted successfully', 'success')
+        else:
+            flash('Error saving updated price list', 'error')
     else:
         flash('Item not found', 'error')
     
@@ -92,6 +101,7 @@ def delete_price():
 @pricing_bp.route('/add-price', methods=['POST'])
 @require_auth
 def add_price():
+    user_email = session.get('user_email')
     item = request.form.get('item')
     unit = request.form.get('unit')
     price = request.form.get('price')
@@ -106,19 +116,28 @@ def add_price():
         flash('Price must be a number', 'error')
         return redirect(url_for('pricing.price_list'))
     
-    price_list = load_price_list()
+    # Get current price list
+    price_list = get_price_list(user_email)
     price_list[item] = {"unit": unit, "price": price}
-    save_price_list(price_list)
     
-    flash('Price added successfully', 'success')
+    # Save updated price list
+    save_result = save_price_list(user_email, price_list)
+    
+    if save_result:
+        flash('Price added successfully', 'success')
+    else:
+        flash('Error saving updated price list', 'error')
+        
     return redirect(url_for('pricing.price_list'))
 
 @pricing_bp.route('/update-price', methods=['POST'])
 @require_auth
 def update_price():
+    user_email = session.get('user_email')
     item = request.form.get('item')
     unit = request.form.get('unit')
     price = request.form.get('price')
+    old_item = request.form.get('displayItemName')
     
     if not all([item, unit, price]):
         flash('All fields are required', 'error')
@@ -130,11 +149,22 @@ def update_price():
         flash('Price must be a number', 'error')
         return redirect(url_for('pricing.price_list'))
     
-    price_list = load_price_list()
+    # Get current price list
+    price_list = get_price_list(user_email)
+    
+    # If item name was changed, remove the old item
+    if old_item and old_item != item and old_item in price_list:
+        del price_list[old_item]
     
     # Add or update the item
     price_list[item] = {"unit": unit, "price": price}
-    save_price_list(price_list)
     
-    flash('Price updated successfully', 'success')
+    # Save updated price list
+    save_result = save_price_list(user_email, price_list)
+    
+    if save_result:
+        flash('Price updated successfully', 'success')
+    else:
+        flash('Error saving updated price list', 'error')
+        
     return redirect(url_for('pricing.price_list'))

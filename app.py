@@ -49,6 +49,11 @@ def cleanup_session_files():
 # Create Flask app
 app = Flask(__name__)
 
+
+# Initialize price lists from existing price_list.json to the database
+from db.price_lists import initialize_price_lists
+initialize_price_lists()
+
 # Load configuration from config.py
 app.config.from_object(get_config())
 
