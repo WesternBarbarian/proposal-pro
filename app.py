@@ -50,10 +50,6 @@ def cleanup_session_files():
 app = Flask(__name__)
 
 
-# Initialize price lists from existing price_list.json to the database
-from db.price_lists import initialize_price_lists
-initialize_price_lists()
-
 # Load configuration from config.py
 app.config.from_object(get_config())
 
@@ -94,6 +90,12 @@ app.register_blueprint(admin_bp)
 
 # Initialize database
 init_db(app)
+
+# Initialize price lists within app context
+with app.app_context():
+    from db.price_lists import initialize_price_lists
+    initialize_price_lists()
+
 register_db_commands(app)
 
 # Start the cleanup thread
