@@ -55,12 +55,34 @@ def create_tables():
         CREATE UNIQUE INDEX IF NOT EXISTS ux_users_tenant_email ON users(tenant_id, email);
         CREATE INDEX IF NOT EXISTS idx_users_tenant_id ON users(tenant_id);
         """
+
+        # Create price_lists table for tenant-specific price lists
+        create_price_lists_table = """
+        CREATE TABLE IF NOT EXISTS price_lists (
+          id               UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
+          tenant_id        UUID      NOT NULL REFERENCES tenants(id),
+          prices           JSONB     NOT NULL,
+          created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+
+        -- Create index on tenant_id for faster lookups
+        CREATE INDEX IF NOT EXISTS idx_price_lists_tenant_id ON price_lists(tenant_id);
+        """
+
         
         # First create the ENUM type if it doesn't exist
         execute_query(create_user_role_enum, fetch=False)
         # Then create the users table
         execute_query(create_users_table, fetch=False)
         logger.info("Users table created successfully")
+
+        # Create the price_lists table
+        execute_query(create_price_lists_table, fetch=False)
+        logger.info("Price lists table created successfully")
+
+
+        
         
         return True
     except Exception as e:
