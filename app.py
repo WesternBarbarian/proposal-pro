@@ -91,10 +91,15 @@ app.register_blueprint(admin_bp)
 # Initialize database
 init_db(app)
 
-# Initialize price lists within app context
+# Ensure tables exist before initializing price lists
 with app.app_context():
-    from db.price_lists import initialize_price_lists
-    initialize_price_lists()
+    from db.init_db import create_tables
+    tables_created = create_tables()
+    
+    if tables_created:
+        # Only initialize price lists if tables were created successfully
+        from db.price_lists import initialize_price_lists
+        initialize_price_lists()
 
 register_db_commands(app)
 
