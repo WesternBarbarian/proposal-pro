@@ -1,4 +1,3 @@
-
 import logging
 from db.connection import execute_query
 
@@ -26,10 +25,10 @@ def create_tables():
           deleted_at             TIMESTAMPTZ              -- soft-delete flag
         );
         """
-        
+
         execute_query(create_tenants_table, fetch=False)
         logger.info("Tenants table created successfully")
-        
+
         # Create users table with user_role ENUM
         create_user_role_enum = """
         DO $$
@@ -39,7 +38,7 @@ def create_tables():
             END IF;
         END$$;
         """
-        
+
         create_users_table = """
         CREATE TABLE IF NOT EXISTS users (
           id               UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -50,7 +49,7 @@ def create_tables():
           created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
           updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
         );
-        
+
         -- ensure no two users share the same email within a tenant:
         CREATE UNIQUE INDEX IF NOT EXISTS ux_users_tenant_email ON users(tenant_id, email);
         CREATE INDEX IF NOT EXISTS idx_users_tenant_id ON users(tenant_id);
@@ -70,7 +69,7 @@ def create_tables():
         CREATE INDEX IF NOT EXISTS idx_price_lists_tenant_id ON price_lists(tenant_id);
         """
 
-        
+
         # First create the ENUM type if it doesn't exist
         execute_query(create_user_role_enum, fetch=False)
         # Then create the users table
@@ -81,9 +80,24 @@ def create_tables():
         execute_query(create_price_lists_table, fetch=False)
         logger.info("Price lists table created successfully")
 
+        # Create templates table for tenant-specific templates
+        create_templates_table = """
+        CREATE TABLE IF NOT EXISTS templates (
+          id               UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
+          tenant_id        UUID      NOT NULL REFERENCES tenants(id),
+          template_text    TEXT      NOT NULL,
+          is_default      BOOLEAN   NOT NULL DEFAULT false,
+          created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
 
-        
-        
+        -- Create index on tenant_id for faster lookups
+        CREATE INDEX IF NOT EXISTS idx_templates_tenant_id ON templates(tenant_id);
+        """
+
+        execute_query(create_templates_table, fetch=False)
+        logger.info("Templates table created successfully")
+
         return True
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
