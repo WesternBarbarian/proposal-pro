@@ -87,9 +87,11 @@ def delete_template(email, template_id):
 def initialize_templates():
     """Migrate existing template files to database."""
     try:
-        # Get all tenants
-        query = "SELECT id FROM tenants WHERE deleted_at IS NULL;"
-        tenants = execute_query(query)
+        from app import app
+        with app.app_context():
+            # Get all tenants
+            query = "SELECT id FROM tenants WHERE deleted_at IS NULL;"
+            tenants = execute_query(query)
 
         # Load default templates
         try:
@@ -117,6 +119,7 @@ def initialize_templates():
             result = execute_query(query_check, (tenant_id,))
 
             if not result:
+                logger.info(f"No templates found for tenant {tenant_id}, adding default templates")
                 # Add default templates
                 for template in default_templates:
                     query_insert = """
@@ -124,6 +127,7 @@ def initialize_templates():
                     VALUES (%s, %s, true);
                     """
                     execute_query(query_insert, (tenant_id, template), fetch=False)
+                    logger.info(f"Added default template for tenant {tenant_id}")
 
                 # Add custom templates if they exist for this tenant
                 if tenant_id in custom_templates:
