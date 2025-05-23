@@ -10,7 +10,12 @@ if __name__ == "__main__":
             # Initialize price lists and templates if tables were created successfully
             from db.price_lists import initialize_price_lists
             from db.templates import initialize_templates
-            initialize_price_lists()
-            initialize_templates()
+            print("Initializing price lists...")
+            price_lists_success = initialize_price_lists()
+            print("Price lists initialization:", "successful" if price_lists_success else "failed")
+            
+            print("Initializing templates...")
+            templates_success = initialize_templates()
+            print("Templates initialization:", "successful" if templates_success else "failed")
         else:
             print("Failed to create database tables")
