@@ -224,8 +224,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('customerPhone').textContent = formData.get('customer_phone');
                 document.getElementById('customerEmail').textContent = formData.get('customer_email');
                 document.getElementById('customerAddress').textContent = formData.get('customer_address');
-                if (formData.get('customer_project_address')) {
-                    document.getElementById('customerProjectAddress').textContent = formData.get('customer_project_address');
+                
+                // Only update project address if the element exists
+                const projectAddressElement = document.getElementById('customerProjectAddress');
+                if (projectAddressElement && formData.get('customer_project_address')) {
+                    projectAddressElement.textContent = formData.get('customer_project_address');
                 }
                 
                 customerView.style.display = 'block';
