@@ -32,24 +32,37 @@ def get_templates(email):
             logger.error(f"No tenant found for user: {email}")
             return []
 
-        query = """
+        # First check if there are any custom templates
+        custom_query = """
         SELECT template_text FROM templates 
-        WHERE tenant_id = %s
+        WHERE tenant_id = %s AND is_default = false
         ORDER BY created_at;
         """
-        result = execute_query(query, (tenant_id,))
+        custom_result = execute_query(custom_query, (tenant_id,))
 
-        if result and len(result) > 0:
-            return [row['template_text'] for row in result]
+        # If custom templates exist, return only those
+        if custom_result and len(custom_result) > 0:
+            return [row['template_text'] for row in custom_result]
 
-        # If no templates exist, initialize default templates for this tenant
+        # If no custom templates exist, check for default templates
+        default_query = """
+        SELECT template_text FROM templates 
+        WHERE tenant_id = %s AND is_default = true
+        ORDER BY created_at;
+        """
+        default_result = execute_query(default_query, (tenant_id,))
+
+        if default_result and len(default_result) > 0:
+            return [row['template_text'] for row in default_result]
+
+        # If no templates exist at all, initialize default templates for this tenant
         logger.info(f"No templates found for tenant {tenant_id}, initializing default templates")
         initialize_templates_for_tenant(tenant_id)
         
-        # Try again to get templates
-        result = execute_query(query, (tenant_id,))
-        if result and len(result) > 0:
-            return [row['template_text'] for row in result]
+        # Try again to get default templates
+        default_result = execute_query(default_query, (tenant_id,))
+        if default_result and len(default_result) > 0:
+            return [row['template_text'] for row in default_result]
 
         return []
     except Exception as e:
@@ -109,17 +122,26 @@ def delete_template(email, template_index):
         """
         execute_query(query_delete, (tenant_id, template_to_delete['id']), fetch=False)
         
-        # Check if there are any remaining templates
+        # Check if there are any remaining custom templates
         remaining_query = """
         SELECT COUNT(*) as count FROM templates 
-        WHERE tenant_id = %s;
+        WHERE tenant_id = %s AND is_default = false;
         """
         remaining_result = execute_query(remaining_query, (tenant_id,))
         
-        # If no templates remain, initialize default templates
+        # If no custom templates remain, ensure default templates exist
         if remaining_result and remaining_result[0]['count'] == 0:
-            logger.info(f"No templates remaining for tenant {tenant_id}, initializing default templates")
-            initialize_templates_for_tenant(tenant_id)
+            logger.info(f"No custom templates remaining for tenant {tenant_id}, ensuring default templates exist")
+            # Check if default templates exist
+            default_check_query = """
+            SELECT COUNT(*) as count FROM templates 
+            WHERE tenant_id = %s AND is_default = true;
+            """
+            default_check_result = execute_query(default_check_query, (tenant_id,))
+            
+            # Only initialize if no default templates exist
+            if not default_check_result or default_check_result[0]['count'] == 0:
+                initialize_templates_for_tenant(tenant_id)
         
         return True
     except Exception as e:
