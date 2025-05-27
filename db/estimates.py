@@ -1,6 +1,7 @@
 
 import logging
 import json
+import psycopg2.extras
 from datetime import datetime
 from db.connection import execute_query
 from db.tenants import get_tenant_id_by_user_email
@@ -44,11 +45,25 @@ def create_estimate(user_email, customer, project_details, line_items, total_cos
             user_email
         )
         
-        result = execute_query(query, params, fetch=True)
-        if result and len(result) > 0:
-            estimate_id = result[0]['estimate_id']
-            logger.info(f"Created estimate with ID: {estimate_id}")
-            return str(estimate_id)
+        # Use a direct connection to ensure proper transaction handling
+        from db.connection import get_db_connection
+        conn = get_db_connection()
+        
+        try:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(query, params)
+                result = cur.fetchone()
+                conn.commit()  # Explicitly commit the transaction
+                
+                if result:
+                    estimate_id = result['estimate_id']
+                    logger.info(f"Created estimate with ID: {estimate_id}")
+                    return str(estimate_id)
+                
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error executing create estimate query: {e}")
+            raise
         
         return None
         
@@ -160,9 +175,20 @@ def update_estimate(estimate_id, user_email, customer=None, project_details=None
         WHERE estimate_id = %s AND tenant_id = %s AND deleted_at IS NULL
         """
         
-        execute_query(query, params, fetch=False)
-        logger.info(f"Updated estimate {estimate_id}")
-        return True
+        # Use direct connection for proper transaction handling
+        from db.connection import get_db_connection
+        conn = get_db_connection()
+        
+        try:
+            with conn.cursor() as cur:
+                cur.execute(query, params)
+                conn.commit()  # Explicitly commit the transaction
+                logger.info(f"Updated estimate {estimate_id}")
+                return True
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Error executing update estimate query: {e}")
+            raise
         
     except Exception as e:
         logger.error(f"Error updating estimate {estimate_id}: {e}")
