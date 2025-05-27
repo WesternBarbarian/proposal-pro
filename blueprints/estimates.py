@@ -478,6 +478,94 @@ def update_line_items():
         logging.error(f"Error updating line items: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'message': str(e)}), 500
 
+@estimates_bp.route('/debug_estimates', methods=['GET'])
+@require_auth
+def debug_estimates():
+    """Debug route to show raw estimates data"""
+    try:
+        user_email = session.get('user_email')
+        if not user_email:
+            return jsonify({'error': 'No user email in session'}), 400
+        
+        from db.tenants import get_tenant_id_by_user_email
+        from db.connection import execute_query
+        
+        tenant_id = get_tenant_id_by_user_email(user_email)
+        logging.info(f"Debug: User {user_email} has tenant_id: {tenant_id}")
+        
+        # Get raw estimates data
+        query = """
+        SELECT estimate_id, tenant_id, customer_data, total_cost, created_at, created_by_email
+        FROM estimates 
+        WHERE tenant_id = %s AND deleted_at IS NULL
+        ORDER BY created_at DESC
+        """
+        
+        raw_estimates = execute_query(query, (tenant_id,), fetch=True)
+        
+        # Also get all estimates regardless of tenant for debugging
+        all_estimates_query = """
+        SELECT estimate_id, tenant_id, customer_data, total_cost, created_at, created_by_email
+        FROM estimates 
+        WHERE deleted_at IS NULL
+        ORDER BY created_at DESC
+        """
+        
+        all_estimates = execute_query(all_estimates_query, fetch=True)
+        
+        return jsonify({
+            'user_email': user_email,
+            'tenant_id': str(tenant_id) if tenant_id else None,
+            'estimates_for_tenant': len(raw_estimates),
+            'all_estimates_in_db': len(all_estimates),
+            'tenant_estimates': [
+                {
+                    'estimate_id': str(row['estimate_id']),
+                    'customer_name': json.loads(row['customer_data']).get('name', 'Unknown'),
+                    'total_cost': float(row['total_cost']),
+                    'created_by': row['created_by_email'],
+                    'created_at': row['created_at'].isoformat() if row['created_at'] else None
+                } for row in raw_estimates
+            ],
+            'all_estimates': [
+                {
+                    'estimate_id': str(row['estimate_id']),
+                    'tenant_id': str(row['tenant_id']),
+                    'customer_name': json.loads(row['customer_data']).get('name', 'Unknown'),
+                    'total_cost': float(row['total_cost']),
+                    'created_by': row['created_by_email'],
+                    'created_at': row['created_at'].isoformat() if row['created_at'] else None
+                } for row in all_estimates
+            ]
+        })
+        
+    except Exception as e:
+        logging.error(f"Error in debug_estimates: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@estimates_bp.route('/list_estimates', methods=['GET'])
+@require_auth
+def list_estimates():
+    """List all estimates for the current user's tenant"""
+    try:
+        user_email = session.get('user_email')
+        if not user_email:
+            flash('User session expired. Please log in again.', 'error')
+            return redirect(url_for('auth.login'))
+        
+        from db.estimates import get_estimates_for_tenant
+        estimates = get_estimates_for_tenant(user_email)
+        
+        logging.info(f"Found {len(estimates)} estimates for user {user_email}")
+        
+        return render_template('estimate_list.html', 
+                             estimates=estimates, 
+                             authenticated=True)
+    except Exception as e:
+        logging.error(f"Error listing estimates: {str(e)}", exc_info=True)
+        flash(f'Error listing estimates: {str(e)}', 'error')
+        return redirect(url_for('estimates.estimate'))
+
 @estimates_bp.route('/save_to_drive', methods=['POST'])
 @require_auth
 def save_to_drive():
