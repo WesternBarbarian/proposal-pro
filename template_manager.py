@@ -110,7 +110,8 @@ def delete_template(template_id):
         if len(remaining_templates) == 0:
             return False, "Cannot delete the last template. At least one template must remain."
         
-        # Delete the template from the database
+        # Delete the template from the database using the index
+        from db.templates import delete_template as db_delete_template
         success = db_delete_template(email, template_id)
         
         if success:

@@ -65,21 +65,40 @@ def save_template(email, template_text, is_default=False):
         logger.error(f"Error saving template: {e}")
         return False
 
-def delete_template(email, template_id):
-    """Delete a template for a user's tenant."""
+def delete_template(email, template_index):
+    """Delete a template for a user's tenant by index."""
     try:
         tenant_id = get_tenant_id_for_user(email)
         if not tenant_id:
             logger.error(f"No tenant found for user: {email}")
             return False
 
-        query = """
+        # Get all templates for the tenant
+        query_get = """
+        SELECT id, template_text, is_default FROM templates 
+        WHERE tenant_id = %s
+        ORDER BY created_at;
+        """
+        templates = execute_query(query_get, (tenant_id,))
+        
+        if not templates or template_index >= len(templates):
+            logger.error(f"Template index {template_index} not found")
+            return False
+            
+        template_to_delete = templates[template_index]
+        
+        # Don't allow deletion of default templates
+        if template_to_delete['is_default']:
+            logger.error(f"Cannot delete default template")
+            return False
+
+        # Delete the template by its actual UUID
+        query_delete = """
         DELETE FROM templates 
         WHERE tenant_id = %s 
-        AND id = %s 
-        AND NOT is_default;
+        AND id = %s;
         """
-        execute_query(query, (tenant_id, template_id), fetch=False)
+        execute_query(query_delete, (tenant_id, template_to_delete['id']), fetch=False)
         return True
     except Exception as e:
         logger.error(f"Error deleting template: {e}")
