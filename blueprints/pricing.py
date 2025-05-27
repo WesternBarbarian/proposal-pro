@@ -75,42 +75,6 @@ def generate_price_list_route():
         return redirect(url_for('pricing.price_list'))
 
     except Exception as e:
-def generate_price_list_route():
-    try:
-        user_email = session.get('user_email')
-        
-        if request.files.get('file') and request.files['file'].filename:
-            file = request.files['file']
-            temp_path = f"temp_{file.filename}"
-            file.save(temp_path)
-            try:
-                price_items = generate_price_list_from_image(temp_path)
-            finally:
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
-        elif request.form.get('price_description'):
-            description = request.form.get('price_description')
-            price_items = generate_price_list(description)
-        else:
-            flash('Please provide either a file or price description.', 'error')
-            return redirect(url_for('pricing.price_list'))
-        
-        # Convert Items object to dictionary if needed
-        if hasattr(price_items, 'prices'):
-            price_dict = {item.item: {"unit": item.unit, "price": item.price} for item in price_items.prices}
-        else:
-            price_dict = price_items
-            
-        # Save the generated price list to database
-        save_result = save_price_list(user_email, price_dict)
-        
-        if save_result:
-            flash('Price list generated and saved successfully!', 'success')
-        else:
-            flash('Error saving price list to database.', 'error')
-            
-        return redirect(url_for('pricing.price_list'))
-    except Exception as e:
         logging.error(f"Error generating price list: {str(e)}", exc_info=True)
         flash(f'Error generating price list: {str(e)}', 'error')
         return redirect(url_for('pricing.price_list'))
