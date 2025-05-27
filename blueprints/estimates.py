@@ -247,6 +247,29 @@ def create_proposal():
                 session['proposal_content'] = raw_proposal
                 session.modified = True
 
+            # Store in session for later use
+            session['proposal_content'] = raw_proposal
+            session.modified = True
+
+            # Save proposal to database
+            user_email = session.get('user_email')
+            estimate_id = estimate_result.get('estimate_id')
+
+            if user_email and estimate_id:
+                from db.proposals import create_proposal as db_create_proposal
+                proposal_id = db_create_proposal(
+                    estimate_id=estimate_id,
+                    proposal_content=raw_proposal,
+                    user_email=user_email,
+                    status='draft'
+                )
+                if proposal_id:
+                    session['proposal_id'] = proposal_id
+                    session.modified = True
+                    logging.info(f"Created new proposal with ID: {proposal_id}")
+                else:
+                    logging.warning("Failed to save proposal to database")
+
             # Return the proposal.html template with data from session
             logging.info("Rendering proposal.html with session data")
             return render_template('proposal.html', 
