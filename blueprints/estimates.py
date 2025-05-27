@@ -653,3 +653,60 @@ def save_to_drive():
         logging.error(f"Error saving to Google Drive: {str(e)}", exc_info=True)
         flash(f'Error saving to Google Drive: {str(e)}', 'error')
         return redirect(url_for('estimates.create_proposal'))
+
+@estimates_bp.route('/update_proposal', methods=['POST'])
+@require_auth
+def update_proposal():
+    try:
+        # Get the proposal content from the form
+        proposal_content = request.form.get('proposal_content')
+        if not proposal_content:
+            return jsonify({'success': False, 'error': 'No proposal content provided'}), 400
+
+        # Update session with new content
+        session['proposal_content'] = proposal_content
+        session.modified = True
+
+        # Update proposal in database if we have a proposal ID
+        proposal_id = session.get('proposal_id')
+        user_email = session.get('user_email')
+
+        if proposal_id and user_email:
+            from db.proposals import update_proposal as db_update_proposal
+            success = db_update_proposal(
+                proposal_id=proposal_id,
+                proposal_content=proposal_content,
+                user_email=user_email
+            )
+            if success:
+                logging.info(f"Updated proposal {proposal_id} in database")
+                return jsonify({'success': True, 'message': 'Proposal updated successfully'})
+            else:
+                logging.warning(f"Failed to update proposal {proposal_id} in database")
+                return jsonify({'success': False, 'error': 'Failed to update proposal in database'}), 500
+        else:
+            # If no proposal ID, create a new proposal
+            estimate_result = session.get('estimate_result')
+            if estimate_result and user_email:
+                estimate_id = estimate_result.get('estimate_id')
+                if estimate_id:
+                    from db.proposals import create_proposal
+                    proposal_id = create_proposal(
+                        estimate_id=estimate_id,
+                        proposal_content=proposal_content,
+                        user_email=user_email,
+                        status='draft'
+                    )
+                    if proposal_id:
+                        session['proposal_id'] = proposal_id
+                        session.modified = True
+                        logging.info(f"Created new proposal with ID: {proposal_id}")
+                        return jsonify({'success': True, 'message': 'Proposal created successfully'})
+                    else:
+                        return jsonify({'success': False, 'error': 'Failed to create proposal'}), 500
+
+        return jsonify({'success': False, 'error': 'Missing proposal or user information'}), 400
+
+    except Exception as e:
+        logging.error(f"Error updating proposal: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
