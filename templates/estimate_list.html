@@ -1,0 +1,31 @@
+
+{% extends "base.html" %}
+
+{% block title %}Estimates List{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Estimates List</h2>
+    
+    {% if estimates %}
+        <div class="estimates-list">
+            {% for estimate in estimates %}
+                <div class="estimate-item" style="border: 1px solid #ddd; margin: 10px 0; padding: 15px;">
+                    <h4>Estimate ID: {{ estimate.estimate_id }}</h4>
+                    <p><strong>Customer:</strong> {{ estimate.customer.name }}</p>
+                    <p><strong>Total Cost:</strong> ${{ "%.2f"|format(estimate.total_cost) }}</p>
+                    <p><strong>Created:</strong> {{ estimate.created_at.strftime('%Y-%m-%d %H:%M:%S') if estimate.created_at else 'Unknown' }}</p>
+                    <p><strong>Project Notes:</strong> {{ estimate.project_details.notes if estimate.project_details.notes else 'No notes' }}</p>
+                    <a href="{{ url_for('estimates.estimate_results', estimate_id=estimate.estimate_id) }}" class="btn btn-primary">View Details</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No estimates found for your account.</p>
+    {% endif %}
+    
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('estimates.estimate') }}" class="btn btn-secondary">Create New Estimate</a>
+    </div>
+</div>
+{% endblock %}

@@ -79,6 +79,12 @@ def process_estimate():
         line_items_dict = line_items.dict()
 
         # Save estimate to database
+        logging.info(f"Attempting to save estimate for user: {user_email}")
+        logging.debug(f"Customer data: {customer}")
+        logging.debug(f"Project details: {project_details}")
+        logging.debug(f"Line items: {line_items_dict}")
+        logging.debug(f"Total cost: {total_cost}")
+        
         estimate_id = create_estimate(
             user_email=user_email,
             customer=customer,
@@ -88,8 +94,11 @@ def process_estimate():
         )
 
         if not estimate_id:
+            logging.error(f"Failed to save estimate to database for user: {user_email}")
             flash('Failed to save estimate. Please try again.', 'error')
             return redirect(url_for('estimates.estimate'))
+        
+        logging.info(f"Successfully saved estimate to database with ID: {estimate_id}")
 
         # Store estimate result in session for immediate use
         estimate_result = {
