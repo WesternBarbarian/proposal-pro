@@ -40,10 +40,11 @@
 document.addEventListener('DOMContentLoaded', function() {
     const viewMode = document.getElementById('viewMode');
     const editMode = document.getElementById('editMode');
-    const toggleEdit = document.getElementById('toggleEdit');
     const proposalEditor = document.getElementById('proposalEditor');
-    const proposalContent = document.getElementById('proposalContent');
-    const downloadForm = document.getElementById('downloadForm');
+    const toggleEdit = document.getElementById('toggleEdit');
+
+    let isEditing = false;
+    let saveTimeout;
 
     // Toggle between view and edit modes
     toggleEdit.addEventListener('click', function() {
@@ -63,6 +64,48 @@ document.addEventListener('DOMContentLoaded', function() {
         feather.replace();
     });
 
+    // Auto-save functionality
+    function autoSaveProposal() {
+        const content = proposalEditor.value;
+
+        fetch('/update_proposal', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'proposal_content': content,
+                'csrf_token': '{{ csrf_token() }}'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Proposal auto-saved successfully');
+                // Optional: Show a brief success indicator
+            } else {
+                console.error('Auto-save failed:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Auto-save error:', error);
+        });
+    }
+
+    // Add event listener for auto-save on input change
+    proposalEditor.addEventListener('input', function() {
+        // Clear existing timeout
+        if (saveTimeout) {
+            clearTimeout(saveTimeout);
+        }
+
+        // Set new timeout to save after 2 seconds of no typing
+        saveTimeout = setTimeout(autoSaveProposal, 2000);
+    });
+
+    const downloadForm = document.getElementById('downloadForm');
+    const proposalContent = document.getElementById('proposalContent');
+
     // Update hidden input before form submission
     downloadForm.addEventListener('submit', function(e) {
         // Set content from either edit mode or view mode
@@ -73,20 +116,20 @@ document.addEventListener('DOMContentLoaded', function() {
             // We're in edit mode, use the editor value directly
             proposalContent.value = proposalEditor.value;
         }
-        
+
         // Debug
         console.log("Submitting proposal content:", proposalContent.value);
-        
+
         // Prevent submission if empty
         if (!proposalContent.value.trim()) {
             e.preventDefault();
             alert("No proposal content to download");
         }
     });
-    
+
     const driveForm = document.getElementById('driveForm');
     const driveProposalContent = document.getElementById('driveProposalContent');
-    
+
     driveForm.addEventListener('submit', function(e) {
         // Set content from either edit mode or view mode
         if (editMode.classList.contains('d-none')) {
@@ -96,7 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // We're in edit mode, use the editor value directly
             driveProposalContent.value = proposalEditor.value;
         }
-        
+
         // Prevent submission if empty
         if (!driveProposalContent.value.trim()) {
             e.preventDefault();

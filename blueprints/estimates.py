@@ -2,7 +2,7 @@ import os
 import json
 import uuid
 import logging
-from flask import Blueprint, request, redirect, url_for, flash, session, render_template, send_file, jsonify
+from flask import Blueprint, request, redirect, url_for, flash, session, render_template, send_file, jsonify, make_response
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import TextAreaField, SubmitField
@@ -67,13 +67,13 @@ def process_estimate():
         if not user_email:
             flash('User session expired. Please log in again.', 'error')
             return redirect(url_for('auth.login'))
-            
+
         price_list = load_price_list(user_email)
         if not price_list:
             flash('No price list found for your account. Please set up your price list first.', 'warning')
             # Continue with empty price list to allow estimate generation
             price_list = {}
-            
+
         line_items = lookup_prices(project_details, price_list)
         total_cost = line_items.sub_total
         line_items_dict = line_items.dict()
@@ -84,7 +84,7 @@ def process_estimate():
         logging.debug(f"Project details: {project_details}")
         logging.debug(f"Line items: {line_items_dict}")
         logging.debug(f"Total cost: {total_cost}")
-        
+
         estimate_id = create_estimate(
             user_email=user_email,
             customer=customer,
@@ -97,7 +97,7 @@ def process_estimate():
             logging.error(f"Failed to save estimate to database for user: {user_email}")
             flash('Failed to save estimate. Please try again.', 'error')
             return redirect(url_for('estimates.estimate'))
-        
+
         logging.info(f"Successfully saved estimate to database with ID: {estimate_id}")
 
         # Store estimate result in session for immediate use
@@ -188,14 +188,14 @@ def create_proposal():
         try:
             # Generate a proposal using AI helper
             logging.info("Generating proposal using AI helper")
-            
+
             customer = estimate_result['customer']
             project_details = estimate_result['project_details']
             line_items = estimate_result['line_items']
-            
+
             # Import generate_proposal from ai_helper
             from ai_helper import generate_proposal
-            
+
             try:
                 # Call the AI helper function to generate the proposal
                 raw_proposal = generate_proposal(
@@ -204,31 +204,31 @@ def create_proposal():
                     line_items=line_items,
                     templates=templates
                 )
-                
+
                 logging.info("AI proposal generated successfully")
-                
+
                 if not raw_proposal:
                     logging.warning("AI generated an empty proposal, falling back to template")
                     # Fallback to a simple template if AI fails
                     customer_name = customer.get('name', 'Customer')
                     total_cost = estimate_result['total_cost']
                     total_cost_formatted = f"${total_cost:.2f}"
-                    
+
                     raw_proposal = f"# Project Proposal for {customer_name}\n\n"
                     raw_proposal += f"Total Cost: {total_cost_formatted}\n\n"
                     raw_proposal += "## Project Details\n\n"
                     raw_proposal += f"Project Address: {customer.get('project_address', 'Same as customer address')}\n\n"
-                    
+
                     # Format line items as markdown table
                     raw_proposal += "## Line Items\n\n"
                     raw_proposal += "| Item | Quantity | Unit | Price | Total |\n"
                     raw_proposal += "|------|----------|------|-------|-------|\n"
-                    
+
                     for item in line_items['lines']:
                         raw_proposal += f"| {item['name']} | {item['quantity']} | {item['unit']} | ${item['price']:.2f} | ${item['total']:.2f} |\n"
-                    
+
                     raw_proposal += f"\n**Total: ${total_cost:.2f}**"
-                    
+
                     # Add contact information
                     raw_proposal += "\n\nContact Details:\n\n"
                     raw_proposal += f"- Name: {customer.get('name', 'Unknown')}\n"
@@ -238,7 +238,7 @@ def create_proposal():
             except Exception as e:
                 logging.error(f"Error generating AI proposal: {str(e)}", exc_info=True)
                 flash(f"Error generating AI proposal: {str(e)}", "warning")
-                
+
                 # Fallback to simple template
                 customer_name = customer.get('name', 'Customer')
                 total_cost = estimate_result['total_cost']
@@ -353,30 +353,53 @@ def create_proposal():
 @estimates_bp.route('/save_proposal', methods=['POST'])
 @require_auth
 def save_proposal():
-    logging.info("save_proposal route called")
-    edited_proposal = request.form.get('edited_proposal')
-    logging.debug(f"Received proposal content: {edited_proposal[:50]}..." if edited_proposal else "No content")
+    try:
+        # Get the edited proposal content from the form
+        edited_proposal = request.form.get('edited_proposal')
+        if not edited_proposal:
+            flash('No proposal content provided.', 'error')
+            return redirect(url_for('estimates.create_proposal'))
 
-    if not edited_proposal:
-        # Try to get the proposal from the session if form submission failed
-        edited_proposal = session.get('proposal_content')
-        logging.debug(f"Retrieved from session: {edited_proposal[:50]}..." if edited_proposal else "No content in session")
+        # Update session with edited content
+        session['proposal_content'] = edited_proposal
+        session.modified = True
 
-    if not edited_proposal:
-        flash('No proposal content provided.', 'error')
+        # Update proposal in database if we have a proposal ID
+        proposal_id = session.get('proposal_id')
+        user_email = session.get('user_email')
+
+        if proposal_id and user_email:
+            from db.proposals import update_proposal
+            success = update_proposal(
+                proposal_id=proposal_id,
+                proposal_content=edited_proposal,
+                user_email=user_email
+            )
+            if success:
+                logging.info(f"Updated proposal {proposal_id} in database")
+            else:
+                logging.warning(f"Failed to update proposal {proposal_id} in database")
+
+        # Create filename
+        estimate_result = session.get('estimate_result')
+        if estimate_result and 'customer' in estimate_result:
+            customer_name = estimate_result['customer'].get('name', 'Customer')
+            safe_name = "".join(c for c in customer_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            filename = f"proposal_{safe_name}.md"
+        else:
+            filename = "proposal.md"
+
+        # Create response with file download
+        response = make_response(edited_proposal)
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response.headers['Content-Type'] = 'text/markdown'
+
+        return response
+
+    except Exception as e:
+        logging.error(f"Error saving proposal: {str(e)}", exc_info=True)
+        flash(f'Error saving proposal: {str(e)}', 'error')
         return redirect(url_for('estimates.create_proposal'))
-
-    # Generate a unique filename
-    filename = f"proposal_{uuid.uuid4()}.md"
-
-    # Save the proposal to a temporary file
-    with open(filename, 'w') as f:
-        f.write(edited_proposal)
-
-    logging.info(f"Saved proposal to {filename}")
-
-    # Send the file to the client
-    return send_file(filename, as_attachment=True, download_name=filename)
 
 
 @estimates_bp.route('/update_estimate_data', methods=['POST'])
@@ -409,7 +432,7 @@ def update_estimate_data():
         # Update the estimate in the database
         estimate_id = estimate_result.get('estimate_id')
         user_email = session.get('user_email')
-        
+
         if estimate_id and user_email:
             success = update_estimate(
                 estimate_id=estimate_id,
@@ -417,7 +440,7 @@ def update_estimate_data():
                 customer=customer,
                 project_details=project_details
             )
-            
+
             if not success:
                 logging.error("Failed to update estimate in database")
                 return jsonify({'success': False, 'message': 'Failed to update estimate in database'}), 500
@@ -454,7 +477,7 @@ def update_line_items():
         # Update the estimate in the database
         estimate_id = estimate_result.get('estimate_id')
         user_email = session.get('user_email')
-        
+
         if estimate_id and user_email:
             success = update_estimate(
                 estimate_id=estimate_id,
@@ -462,7 +485,7 @@ def update_line_items():
                 line_items=data['line_items'],
                 total_cost=data['line_items']['sub_total']
             )
-            
+
             if not success:
                 logging.error("Failed to update line items in database")
                 return jsonify({'success': False, 'message': 'Failed to update line items in database'}), 500
@@ -486,13 +509,13 @@ def debug_estimates():
         user_email = session.get('user_email')
         if not user_email:
             return jsonify({'error': 'No user email in session'}), 400
-        
+
         from db.tenants import get_tenant_id_by_user_email
         from db.connection import execute_query
-        
+
         tenant_id = get_tenant_id_by_user_email(user_email)
         logging.info(f"Debug: User {user_email} has tenant_id: {tenant_id}")
-        
+
         # Get raw estimates data
         query = """
         SELECT estimate_id, tenant_id, customer_data, total_cost, created_at, created_by_email
@@ -500,9 +523,9 @@ def debug_estimates():
         WHERE tenant_id = %s AND deleted_at IS NULL
         ORDER BY created_at DESC
         """
-        
+
         raw_estimates = execute_query(query, (tenant_id,), fetch=True)
-        
+
         # Also get all estimates regardless of tenant for debugging
         all_estimates_query = """
         SELECT estimate_id, tenant_id, customer_data, total_cost, created_at, created_by_email
@@ -510,9 +533,9 @@ def debug_estimates():
         WHERE deleted_at IS NULL
         ORDER BY created_at DESC
         """
-        
+
         all_estimates = execute_query(all_estimates_query, fetch=True)
-        
+
         return jsonify({
             'user_email': user_email,
             'tenant_id': str(tenant_id) if tenant_id else None,
@@ -538,7 +561,7 @@ def debug_estimates():
                 } for row in all_estimates
             ]
         })
-        
+
     except Exception as e:
         logging.error(f"Error in debug_estimates: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
@@ -552,12 +575,12 @@ def list_estimates():
         if not user_email:
             flash('User session expired. Please log in again.', 'error')
             return redirect(url_for('auth.login'))
-        
+
         from db.estimates import get_estimates_for_tenant
         estimates = get_estimates_for_tenant(user_email)
-        
+
         logging.info(f"Found {len(estimates)} estimates for user {user_email}")
-        
+
         return render_template('estimate_list.html', 
                              estimates=estimates, 
                              authenticated=True)
