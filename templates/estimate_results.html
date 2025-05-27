@@ -5,31 +5,81 @@
 <div class="container">
     <h2>Project Estimate Results</h2>
     
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Customer Information</h4>
+    <form id="updateEstimateForm" method="POST" action="{{ url_for('estimates.update_estimate_data') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>Customer Information</h4>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="editCustomerBtn">
+                    <i data-feather="edit"></i> Edit
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="customerView">
+                    <p><strong>Name:</strong> <span id="customerName">{{ customer.name }}</span></p>
+                    <p><strong>Phone:</strong> <span id="customerPhone">{{ customer.phone }}</span></p>
+                    <p><strong>Email:</strong> <span id="customerEmail">{{ customer.email }}</span></p>
+                    <p><strong>Address:</strong> <span id="customerAddress">{{ customer.address }}</span></p>
+                    {% if customer.project_address and customer.project_address != "same" %}
+                    <p><strong>Project Address:</strong> <span id="customerProjectAddress">{{ customer.project_address }}</span></p>
+                    {% endif %}
+                </div>
+                <div id="customerEdit" style="display: none;">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Name:</strong></label>
+                        <input type="text" class="form-control" name="customer_name" value="{{ customer.name }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Phone:</strong></label>
+                        <input type="text" class="form-control" name="customer_phone" value="{{ customer.phone }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Email:</strong></label>
+                        <input type="email" class="form-control" name="customer_email" value="{{ customer.email }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Address:</strong></label>
+                        <input type="text" class="form-control" name="customer_address" value="{{ customer.address }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Project Address:</strong></label>
+                        <input type="text" class="form-control" name="customer_project_address" value="{{ customer.project_address or '' }}">
+                    </div>
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-success btn-sm" id="saveCustomerBtn">Save</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="cancelCustomerBtn">Cancel</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <p><strong>Name:</strong> {{ customer.name }}</p>
-            <p><strong>Phone:</strong> {{ customer.phone }}</p>
-            <p><strong>Email:</strong> {{ customer.email }}</p>
-            <p><strong>Address:</strong> {{ customer.address }}</p>
-            {% if customer.project_address and customer.project_address != "same" %}
-            <p><strong>Project Address:</strong> {{ customer.project_address }}</p>
-            {% endif %}
-        </div>
-    </div>
 
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Project Details</h4>
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4>Project Details</h4>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="editProjectBtn">
+                    <i data-feather="edit"></i> Edit
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="projectView">
+                    {% if project_details.notes %}
+                    <p><strong>Notes:</strong> <span id="projectNotes">{{ project_details.notes }}</span></p>
+                    {% endif %}
+                </div>
+                <div id="projectEdit" style="display: none;">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Notes:</strong></label>
+                        <textarea class="form-control" name="project_notes" rows="4">{{ project_details.notes or '' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-success btn-sm" id="saveProjectBtn">Save</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="cancelProjectBtn">Cancel</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            {% if project_details.notes %}
-            <p><strong>Notes:</strong> {{ project_details.notes }}</p>
-            {% endif %}
-        </div>
-    </div>
+    </form>
 
     <div class="card mb-4">
         <div class="card-header">
@@ -76,4 +126,101 @@
         <a href="{{ url_for('estimates.estimate') }}" class="btn btn-secondary">New Estimate</a>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Customer editing
+    const editCustomerBtn = document.getElementById('editCustomerBtn');
+    const saveCustomerBtn = document.getElementById('saveCustomerBtn');
+    const cancelCustomerBtn = document.getElementById('cancelCustomerBtn');
+    const customerView = document.getElementById('customerView');
+    const customerEdit = document.getElementById('customerEdit');
+
+    editCustomerBtn.addEventListener('click', function() {
+        customerView.style.display = 'none';
+        customerEdit.style.display = 'block';
+    });
+
+    cancelCustomerBtn.addEventListener('click', function() {
+        customerView.style.display = 'block';
+        customerEdit.style.display = 'none';
+    });
+
+    saveCustomerBtn.addEventListener('click', function() {
+        // Update the view with new values
+        const form = document.getElementById('updateEstimateForm');
+        const formData = new FormData(form);
+        
+        fetch('{{ url_for("estimates.update_estimate_data") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the display values
+                document.getElementById('customerName').textContent = formData.get('customer_name');
+                document.getElementById('customerPhone').textContent = formData.get('customer_phone');
+                document.getElementById('customerEmail').textContent = formData.get('customer_email');
+                document.getElementById('customerAddress').textContent = formData.get('customer_address');
+                if (formData.get('customer_project_address')) {
+                    document.getElementById('customerProjectAddress').textContent = formData.get('customer_project_address');
+                }
+                
+                customerView.style.display = 'block';
+                customerEdit.style.display = 'none';
+            } else {
+                alert('Error updating customer information: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating customer information');
+        });
+    });
+
+    // Project editing
+    const editProjectBtn = document.getElementById('editProjectBtn');
+    const saveProjectBtn = document.getElementById('saveProjectBtn');
+    const cancelProjectBtn = document.getElementById('cancelProjectBtn');
+    const projectView = document.getElementById('projectView');
+    const projectEdit = document.getElementById('projectEdit');
+
+    editProjectBtn.addEventListener('click', function() {
+        projectView.style.display = 'none';
+        projectEdit.style.display = 'block';
+    });
+
+    cancelProjectBtn.addEventListener('click', function() {
+        projectView.style.display = 'block';
+        projectEdit.style.display = 'none';
+    });
+
+    saveProjectBtn.addEventListener('click', function() {
+        const form = document.getElementById('updateEstimateForm');
+        const formData = new FormData(form);
+        
+        fetch('{{ url_for("estimates.update_estimate_data") }}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the display values
+                document.getElementById('projectNotes').textContent = formData.get('project_notes');
+                
+                projectView.style.display = 'block';
+                projectEdit.style.display = 'none';
+            } else {
+                alert('Error updating project details: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating project details');
+        });
+    });
+});
+</script>
 {% endblock %}

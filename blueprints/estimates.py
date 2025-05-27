@@ -2,7 +2,7 @@ import os
 import json
 import uuid
 import logging
-from flask import Blueprint, request, redirect, url_for, flash, session, render_template, send_file
+from flask import Blueprint, request, redirect, url_for, flash, session, render_template, send_file, jsonify
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import TextAreaField, SubmitField
@@ -356,6 +356,47 @@ def save_proposal():
     # Send the file to the client
     return send_file(filename, as_attachment=True, download_name=filename)
 
+
+@estimates_bp.route('/update_estimate_data', methods=['POST'])
+@require_auth
+def update_estimate_data():
+    try:
+        # Get current estimate result from session
+        estimate_result = session.get('estimate_result')
+        if not estimate_result:
+            return {'success': False, 'message': 'No estimate data found in session'}, 400
+
+        # Update customer information
+        customer = estimate_result['customer']
+        customer['name'] = request.form.get('customer_name', customer.get('name', ''))
+        customer['phone'] = request.form.get('customer_phone', customer.get('phone', ''))
+        customer['email'] = request.form.get('customer_email', customer.get('email', ''))
+        customer['address'] = request.form.get('customer_address', customer.get('address', ''))
+        customer['project_address'] = request.form.get('customer_project_address', customer.get('project_address', ''))
+
+        # Update project details
+        project_details = estimate_result['project_details']
+        project_details['notes'] = request.form.get('project_notes', project_details.get('notes', ''))
+
+        # Update the estimate result in session
+        estimate_result['customer'] = customer
+        estimate_result['project_details'] = project_details
+        session['estimate_result'] = estimate_result
+        session.modified = True
+
+        # Also update the backup JSON file
+        try:
+            with open(f'estimate_{ESTIMATE_ID}.json', 'w') as f:
+                json.dump(estimate_result, f, indent=4)
+        except Exception as e:
+            logging.error(f"Error updating estimate data file: {str(e)}")
+
+        logging.info("Estimate data updated successfully")
+        return {'success': True, 'message': 'Estimate data updated successfully'}
+
+    except Exception as e:
+        logging.error(f"Error updating estimate data: {str(e)}", exc_info=True)
+        return {'success': False, 'message': str(e)}, 500
 
 @estimates_bp.route('/save_to_drive', methods=['POST'])
 @require_auth
