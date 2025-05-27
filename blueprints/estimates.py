@@ -10,6 +10,7 @@ from ai_helper import extract_project_data, extract_project_data_from_image, loo
 from blueprints.auth import require_auth
 from google_services import create_doc_in_folder, create_folder_if_not_exists, append_to_sheet, create_tracking_sheet_if_not_exists
 from template_manager import load_templates
+from db.estimates import create_estimate, get_estimate, update_estimate
 
 estimates_bp = Blueprint('estimates', __name__)
 
@@ -20,8 +21,7 @@ class ProjectForm(FlaskForm):
     ])
     submit_button = SubmitField('Generate Estimate')
 
-# Unique identifier for this estimate session
-ESTIMATE_ID = str(uuid.uuid4())
+
 
 def load_price_list(user_email):
     """Load price list from database for user's tenant."""
@@ -78,27 +78,32 @@ def process_estimate():
         total_cost = line_items.sub_total
         line_items_dict = line_items.dict()
 
-        # Store data in global variable AND session
+        # Save estimate to database
+        estimate_id = create_estimate(
+            user_email=user_email,
+            customer=customer,
+            project_details=project_details,
+            line_items=line_items_dict,
+            total_cost=total_cost
+        )
+
+        if not estimate_id:
+            flash('Failed to save estimate. Please try again.', 'error')
+            return redirect(url_for('estimates.estimate'))
+
+        # Store estimate result in session for immediate use
         estimate_result = {
             'customer': customer,
             'project_details': project_details,
             'line_items': line_items_dict,
             'total_cost': total_cost,
-            'estimate_id': ESTIMATE_ID
+            'estimate_id': estimate_id
         }
 
-        # Double-store the results in both session and application config to ensure persistence
         session['estimate_result'] = estimate_result
         session.modified = True
 
-        logging.debug(f"Estimate processed successfully. Total cost: ${total_cost:.2f}")
-
-        # Save data as a JSON file (backup persistence mechanism)
-        try:
-            with open(f'estimate_{ESTIMATE_ID}.json', 'w') as f:
-                json.dump(estimate_result, f, indent=4)
-        except Exception as e:
-            logging.error(f"Error saving estimate data to file: {str(e)}")
+        logging.debug(f"Estimate processed successfully. Total cost: ${total_cost:.2f}, ID: {estimate_id}")
 
         return redirect(url_for('estimates.estimate_results'))
 
@@ -115,16 +120,24 @@ def estimate_results():
         # Try to get data from session first
         estimate_result = session.get('estimate_result')
 
-        # If not in session, try to load from file (fallback)
+        # If not in session, try to load from database using estimate_id from URL params
         if not estimate_result:
-            try:
-                with open(f'estimate_{ESTIMATE_ID}.json', 'r') as f:
-                    estimate_result = json.load(f)
-                # Re-populate session with data from file
-                session['estimate_result'] = estimate_result
-                session.modified = True
-            except (FileNotFoundError, json.JSONDecodeError) as e:
-                logging.error(f"Error loading estimate data from file: {str(e)}")
+            estimate_id = request.args.get('estimate_id')
+            if estimate_id:
+                user_email = session.get('user_email')
+                if user_email:
+                    estimate_result = get_estimate(estimate_id, user_email)
+                    if estimate_result:
+                        # Re-populate session with data from database
+                        session['estimate_result'] = estimate_result
+                        session.modified = True
+                    else:
+                        flash('Estimate not found or access denied.', 'error')
+                        return redirect(url_for('estimates.estimate'))
+                else:
+                    flash('User session expired. Please log in again.', 'error')
+                    return redirect(url_for('auth.login'))
+            else:
                 flash('Estimate data not found. Please try again.', 'error')
                 return redirect(url_for('estimates.estimate'))
 
@@ -384,12 +397,21 @@ def update_estimate_data():
         session['estimate_result'] = estimate_result
         session.modified = True
 
-        # Also update the backup JSON file
-        try:
-            with open(f'estimate_{ESTIMATE_ID}.json', 'w') as f:
-                json.dump(estimate_result, f, indent=4)
-        except Exception as e:
-            logging.error(f"Error updating estimate data file: {str(e)}")
+        # Update the estimate in the database
+        estimate_id = estimate_result.get('estimate_id')
+        user_email = session.get('user_email')
+        
+        if estimate_id and user_email:
+            success = update_estimate(
+                estimate_id=estimate_id,
+                user_email=user_email,
+                customer=customer,
+                project_details=project_details
+            )
+            
+            if not success:
+                logging.error("Failed to update estimate in database")
+                return jsonify({'success': False, 'message': 'Failed to update estimate in database'}), 500
 
         logging.info("Estimate data updated successfully")
         return jsonify({'success': True, 'message': 'Estimate data updated successfully'})
@@ -420,12 +442,21 @@ def update_line_items():
         session['estimate_result'] = estimate_result
         session.modified = True
 
-        # Also update the backup JSON file
-        try:
-            with open(f'estimate_{ESTIMATE_ID}.json', 'w') as f:
-                json.dump(estimate_result, f, indent=4)
-        except Exception as e:
-            logging.error(f"Error updating estimate data file: {str(e)}")
+        # Update the estimate in the database
+        estimate_id = estimate_result.get('estimate_id')
+        user_email = session.get('user_email')
+        
+        if estimate_id and user_email:
+            success = update_estimate(
+                estimate_id=estimate_id,
+                user_email=user_email,
+                line_items=data['line_items'],
+                total_cost=data['line_items']['sub_total']
+            )
+            
+            if not success:
+                logging.error("Failed to update line items in database")
+                return jsonify({'success': False, 'message': 'Failed to update line items in database'}), 500
 
         logging.info("Line items updated successfully")
         return jsonify({
