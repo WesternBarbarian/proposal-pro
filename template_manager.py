@@ -114,13 +114,6 @@ def delete_template(template_id):
         # Since we don't have it, we'll need to get the template text and use that
         template_to_delete = templates[template_id]
         
-        # For now, we'll simulate this by re-adding all templates except the one we want to delete
-        remaining_templates = [t for i, t in enumerate(templates) if i != template_id]
-        
-        # If we have no templates left, ensure we keep at least one default template
-        if len(remaining_templates) == 0:
-            return False, "Cannot delete the last template. At least one template must remain."
-        
         # Delete the template from the database using the index
         from db.templates import delete_template as db_delete_template
         success = db_delete_template(email, template_id)
