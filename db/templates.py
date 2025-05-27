@@ -95,22 +95,35 @@ def delete_template(email, template_index):
             logger.error(f"No tenant found for user: {email}")
             return False
 
-        # Get all templates for the tenant
-        query_get = """
+        # Get templates visible to the user (same logic as get_templates)
+        # First check if there are any custom templates
+        custom_query = """
         SELECT id, template_text, is_default FROM templates 
-        WHERE tenant_id = %s
+        WHERE tenant_id = %s AND is_default = false
         ORDER BY created_at;
         """
-        templates = execute_query(query_get, (tenant_id,))
-        
-        if not templates or template_index >= len(templates):
-            logger.error(f"Template index {template_index} not found")
-            return False
+        custom_templates = execute_query(custom_query, (tenant_id,))
+
+        # If custom templates exist, work with those
+        if custom_templates and len(custom_templates) > 0:
+            if template_index >= len(custom_templates):
+                logger.error(f"Template index {template_index} not found in custom templates")
+                return False
+            template_to_delete = custom_templates[template_index]
+        else:
+            # If no custom templates, get default templates
+            default_query = """
+            SELECT id, template_text, is_default FROM templates 
+            WHERE tenant_id = %s AND is_default = true
+            ORDER BY created_at;
+            """
+            default_templates = execute_query(default_query, (tenant_id,))
             
-        template_to_delete = templates[template_index]
-        
-        # Don't allow deletion of default templates
-        if template_to_delete['is_default']:
+            if not default_templates or template_index >= len(default_templates):
+                logger.error(f"Template index {template_index} not found in default templates")
+                return False
+            
+            # Don't allow deletion of default templates
             logger.error(f"Cannot delete default template")
             return False
 
