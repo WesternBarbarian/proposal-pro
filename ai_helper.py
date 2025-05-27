@@ -212,6 +212,30 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
     logger = logging.getLogger(__name__)
     prompt_manager = get_prompt_manager()
     
+    # Log the inputs for debugging
+    logger.debug(f"Price lookup called with price_list: {price_list}")
+    logger.debug(f"Project details: {project_details}")
+    
+    # Check if price list is empty
+    if not price_list or len(price_list) == 0:
+        logger.warning("Empty price list provided to lookup_prices")
+        # Return line items with zero prices if no price list available
+        if project_details and "details" in project_details:
+            zero_price_items = []
+            for detail in project_details["details"]:
+                item_name = detail.get("item", "unknown")
+                quantity = detail.get("quantity", 0)
+                line_item = Line_Item(
+                    name=item_name,
+                    unit="unknown",
+                    price=0.0,
+                    quantity=quantity
+                )
+                zero_price_items.append(line_item)
+            return Line_Items(lines=zero_price_items)
+        else:
+            return Line_Items(lines=[])
+    
     # First, try to use direct mapping for items if they exist in the price list
     # This will handle the case when API returns are not being processed correctly
     try:
@@ -283,6 +307,8 @@ def lookup_prices(project_details: dict, price_list: dict) -> Line_Items:
         # Fallback to empty line items if prompts can't be loaded
         return Line_Items(lines=[])
     
+    logger.debug(f"Price list being sent to AI: {price_list}")
+    logger.debug(f"User request being sent to AI: {project_details}")
     logger.debug(f"Sending prompt to Gemini API: {user_prompt}")
     response = client.models.generate_content(
         model=model,

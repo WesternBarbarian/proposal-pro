@@ -23,12 +23,10 @@ class ProjectForm(FlaskForm):
 # Unique identifier for this estimate session
 ESTIMATE_ID = str(uuid.uuid4())
 
-def load_price_list():
-    try:
-        with open('price_list.json', 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+def load_price_list(user_email):
+    """Load price list from database for user's tenant."""
+    from db.price_lists import get_price_list
+    return get_price_list(user_email)
 
 @estimates_bp.route('/estimate', methods=['GET'])
 @require_auth
@@ -65,7 +63,17 @@ def process_estimate():
             return redirect(url_for('estimates.estimate'))
 
         # Price calculation
-        price_list = load_price_list()
+        user_email = session.get('user_email')
+        if not user_email:
+            flash('User session expired. Please log in again.', 'error')
+            return redirect(url_for('auth.login'))
+            
+        price_list = load_price_list(user_email)
+        if not price_list:
+            flash('No price list found for your account. Please set up your price list first.', 'warning')
+            # Continue with empty price list to allow estimate generation
+            price_list = {}
+            
         line_items = lookup_prices(project_details, price_list)
         total_cost = line_items.sub_total
         line_items_dict = line_items.dict()

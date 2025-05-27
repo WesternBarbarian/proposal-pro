@@ -33,6 +33,50 @@ def price_list():
 @require_auth
 def generate_price_list_route():
     try:
+        # Get user's email from session
+        user_email = session.get('user_email')
+        if not user_email:
+            flash('User session expired. Please log in again.', 'error')
+            return redirect(url_for('auth.login'))
+
+        # Handle file upload or text input
+        if request.files.get('file') and request.files['file'].filename:
+            # Handle file upload
+            file = request.files['file']
+            temp_path = f"temp_{file.filename}"
+            file.save(temp_path)
+            try:
+                items = generate_price_list_from_image(temp_path)
+            finally:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+        elif request.form.get('price_description'):
+            # Handle text input
+            price_description = request.form.get('price_description')
+            items = generate_price_list(price_description)
+        else:
+            flash('Please provide either a file or price description.', 'error')
+            return redirect(url_for('pricing.price_list'))
+
+        # Convert AI response to dictionary format for database storage
+        price_list_dict = {}
+        for item in items.prices:
+            price_list_dict[item.item] = {
+                "unit": item.unit,
+                "price": item.price
+            }
+
+        # Save to database
+        if save_price_list(user_email, price_list_dict):
+            flash('Price list generated and saved successfully!', 'success')
+        else:
+            flash('Price list generated but failed to save to database.', 'warning')
+
+        return redirect(url_for('pricing.price_list'))
+
+    except Exception as e:
+def generate_price_list_route():
+    try:
         user_email = session.get('user_email')
         
         if request.files.get('file') and request.files['file'].filename:
