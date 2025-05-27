@@ -392,11 +392,11 @@ def update_estimate_data():
             logging.error(f"Error updating estimate data file: {str(e)}")
 
         logging.info("Estimate data updated successfully")
-        return {'success': True, 'message': 'Estimate data updated successfully'}
+        return jsonify({'success': True, 'message': 'Estimate data updated successfully'})
 
     except Exception as e:
         logging.error(f"Error updating estimate data: {str(e)}", exc_info=True)
-        return {'success': False, 'message': str(e)}, 500
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @estimates_bp.route('/update_line_items', methods=['POST'])
 @require_auth
