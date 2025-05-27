@@ -42,6 +42,15 @@ def get_templates(email):
         if result and len(result) > 0:
             return [row['template_text'] for row in result]
 
+        # If no templates exist, initialize default templates for this tenant
+        logger.info(f"No templates found for tenant {tenant_id}, initializing default templates")
+        initialize_templates_for_tenant(tenant_id)
+        
+        # Try again to get templates
+        result = execute_query(query, (tenant_id,))
+        if result and len(result) > 0:
+            return [row['template_text'] for row in result]
+
         return []
     except Exception as e:
         logger.error(f"Error getting templates: {e}")
@@ -99,9 +108,50 @@ def delete_template(email, template_index):
         AND id = %s;
         """
         execute_query(query_delete, (tenant_id, template_to_delete['id']), fetch=False)
+        
+        # Check if there are any remaining templates
+        remaining_query = """
+        SELECT COUNT(*) as count FROM templates 
+        WHERE tenant_id = %s;
+        """
+        remaining_result = execute_query(remaining_query, (tenant_id,))
+        
+        # If no templates remain, initialize default templates
+        if remaining_result and remaining_result[0]['count'] == 0:
+            logger.info(f"No templates remaining for tenant {tenant_id}, initializing default templates")
+            initialize_templates_for_tenant(tenant_id)
+        
         return True
     except Exception as e:
         logger.error(f"Error deleting template: {e}")
+        return False
+
+def initialize_templates_for_tenant(tenant_id):
+    """Initialize default templates for a specific tenant."""
+    try:
+        # Load default templates
+        default_templates = []
+        try:
+            with open('default_template.json', 'r') as f:
+                template_data = json.load(f)
+                if 'templates' in template_data and isinstance(template_data['templates'], list):
+                    default_templates = template_data['templates']
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            logger.error(f"Error loading default templates: {e}")
+            default_templates = ["Default template not found. Please add a template."]
+        
+        # Add default templates for this tenant
+        for template in default_templates:
+            query_insert = """
+            INSERT INTO templates (tenant_id, template_text, is_default) 
+            VALUES (%s, %s, true);
+            """
+            execute_query(query_insert, (tenant_id, template), fetch=False)
+            
+        logger.info(f"Initialized {len(default_templates)} default templates for tenant {tenant_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Error initializing templates for tenant {tenant_id}: {e}")
         return False
 
 def initialize_templates():

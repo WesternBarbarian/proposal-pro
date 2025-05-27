@@ -28,9 +28,20 @@ def load_templates():
     # Process templates to ensure proper newlines
     processed_templates = [t.replace('\\r\\n', '\n').replace('\\n', '\n') for t in templates]
     
-    # If we have templates, assume they are custom if there's more than one
-    # This maintains backward compatibility with the using_custom flag
-    using_custom = len(processed_templates) > 1
+    # Check if we have any custom (non-default) templates
+    from db.templates import get_tenant_id_for_user
+    from db.connection import execute_query
+    
+    tenant_id = get_tenant_id_for_user(email)
+    if tenant_id:
+        query = """
+        SELECT COUNT(*) as count FROM templates 
+        WHERE tenant_id = %s AND is_default = false;
+        """
+        result = execute_query(query, (tenant_id,))
+        using_custom = result and result[0]['count'] > 0
+    else:
+        using_custom = False
     
     return processed_templates, using_custom
 
