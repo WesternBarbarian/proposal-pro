@@ -4,10 +4,11 @@ import json
 import logging
 from flask import Blueprint, request, redirect, url_for, flash, session, render_template, jsonify
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, SubmitField
+from wtforms import StringField, TextAreaField, SubmitField, SelectField, IntegerField
 from wtforms.validators import DataRequired
 from prompt_manager import get_prompt_manager
 from blueprints.auth import require_auth
+from db.prompts import get_active_prompts, get_prompt_versions
 
 prompts_bp = Blueprint('prompts', __name__)
 
@@ -19,27 +20,33 @@ class PromptForm(FlaskForm):
     user_prompt = TextAreaField('User Prompt Template', validators=[DataRequired()])
     submit = SubmitField('Save Prompt')
 
+class RollbackForm(FlaskForm):
+    """Form for rolling back to a previous prompt version"""
+    version = SelectField('Version', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Rollback to Version')
+
 @prompts_bp.route('/prompts')
 @require_auth
 def list_prompts():
     """List all available prompts"""
-    prompt_manager = get_prompt_manager()
+    tenant_id = session.get('tenant_id', '00000000-0000-0000-0000-000000000001')
     prompts = []
     
-    # Get names of all prompt files
-    prompts_dir = prompt_manager.prompts_dir
-    if os.path.exists(prompts_dir):
-        for filename in os.listdir(prompts_dir):
-            if filename.endswith('.json'):
-                prompt_name = os.path.splitext(filename)[0]
-                prompt = prompt_manager.get_prompt(prompt_name)
-                if prompt:
-                    prompts.append({
-                        'name': prompt_name,
-                        'description': prompt.get('description', ''),
-                        'has_system_instruction': 'system_instruction' in prompt,
-                        'user_prompt_preview': prompt.get('user_prompt', '')[:100] + '...' if len(prompt.get('user_prompt', '')) > 100 else prompt.get('user_prompt', '')
-                    })
+    try:
+        db_prompts = get_active_prompts(tenant_id)
+        for prompt in db_prompts:
+            prompts.append({
+                'name': prompt['name'],
+                'description': prompt.get('description', ''),
+                'has_system_instruction': bool(prompt.get('system_instruction')),
+                'user_prompt_preview': prompt.get('user_prompt', '')[:100] + '...' if len(prompt.get('user_prompt', '')) > 100 else prompt.get('user_prompt', ''),
+                'version': prompt.get('version', 1),
+                'created_at': prompt.get('created_at'),
+                'created_by_email': prompt.get('created_by_email')
+            })
+    except Exception as e:
+        flash(f"Error loading prompts: {str(e)}", 'error')
+        logging.error(f"Error loading prompts: {str(e)}")
     
     return render_template('prompts.html', prompts=prompts, authenticated=True)
 
@@ -50,27 +57,23 @@ def new_prompt():
     form = PromptForm()
     
     if form.validate_on_submit():
-        prompt_data = {
-            'name': form.name.data,
-            'description': form.description.data,
-            'user_prompt': form.user_prompt.data
-        }
-        
-        if form.system_instruction.data:
-            prompt_data['system_instruction'] = form.system_instruction.data
-            
-        # Save to file
-        prompt_path = os.path.join('prompts', f"{form.name.data}.json")
+        created_by_email = session.get('user_email', 'unknown@unknown.com')
         
         try:
-            with open(prompt_path, 'w') as f:
-                json.dump(prompt_data, f, indent=2)
-                
-            # Refresh prompts
-            get_prompt_manager()._load_all_prompts()
+            prompt_manager = get_prompt_manager()
+            success = prompt_manager.create_or_update_prompt(
+                name=form.name.data,
+                description=form.description.data or '',
+                system_instruction=form.system_instruction.data or '',
+                user_prompt=form.user_prompt.data,
+                created_by_email=created_by_email
+            )
             
-            flash(f"Prompt '{form.name.data}' created successfully", 'success')
-            return redirect(url_for('prompts.list_prompts'))
+            if success:
+                flash(f"Prompt '{form.name.data}' created successfully", 'success')
+                return redirect(url_for('prompts.list_prompts'))
+            else:
+                flash(f"Error creating prompt '{form.name.data}'", 'error')
         except Exception as e:
             flash(f"Error creating prompt: {str(e)}", 'error')
     
@@ -96,32 +99,23 @@ def edit_prompt(name):
         form.user_prompt.data = prompt.get('user_prompt', '')
     
     if form.validate_on_submit():
-        prompt_data = {
-            'name': form.name.data,
-            'description': form.description.data,
-            'user_prompt': form.user_prompt.data
-        }
-        
-        if form.system_instruction.data:
-            prompt_data['system_instruction'] = form.system_instruction.data
-            
-        # Save to file - handle rename case
-        new_prompt_path = os.path.join('prompts', f"{form.name.data}.json")
-        old_prompt_path = os.path.join('prompts', f"{name}.json")
+        created_by_email = session.get('user_email', 'unknown@unknown.com')
         
         try:
-            # If name changed, delete old file
-            if form.name.data != name and os.path.exists(old_prompt_path):
-                os.remove(old_prompt_path)
-                
-            with open(new_prompt_path, 'w') as f:
-                json.dump(prompt_data, f, indent=2)
-                
-            # Refresh prompts
-            get_prompt_manager()._load_all_prompts()
+            # For edit, we always create a new version (database handles versioning)
+            success = prompt_manager.create_or_update_prompt(
+                name=form.name.data,
+                description=form.description.data or '',
+                system_instruction=form.system_instruction.data or '',
+                user_prompt=form.user_prompt.data,
+                created_by_email=created_by_email
+            )
             
-            flash(f"Prompt '{form.name.data}' updated successfully", 'success')
-            return redirect(url_for('prompts.list_prompts'))
+            if success:
+                flash(f"Prompt '{form.name.data}' updated successfully", 'success')
+                return redirect(url_for('prompts.list_prompts'))
+            else:
+                flash(f"Error updating prompt '{form.name.data}'", 'error')
         except Exception as e:
             flash(f"Error updating prompt: {str(e)}", 'error')
     
@@ -131,17 +125,84 @@ def edit_prompt(name):
 @require_auth
 def delete_prompt(name):
     """Delete a prompt"""
-    prompt_path = os.path.join('prompts', f"{name}.json")
-    
-    if not os.path.exists(prompt_path):
-        flash(f"Prompt '{name}' not found", 'error')
-    else:
-        try:
-            os.remove(prompt_path)
-            # Refresh prompts
-            get_prompt_manager()._load_all_prompts()
+    try:
+        prompt_manager = get_prompt_manager()
+        success = prompt_manager.delete_prompt(name)
+        
+        if success:
             flash(f"Prompt '{name}' deleted successfully", 'success')
-        except Exception as e:
-            flash(f"Error deleting prompt: {str(e)}", 'error')
+        else:
+            flash(f"Error deleting prompt '{name}'", 'error')
+    except Exception as e:
+        flash(f"Error deleting prompt: {str(e)}", 'error')
             
+    return redirect(url_for('prompts.list_prompts'))
+
+@prompts_bp.route('/prompts/versions/<name>')
+@require_auth
+def view_prompt_versions(name):
+    """View all versions of a prompt"""
+    tenant_id = session.get('tenant_id', '00000000-0000-0000-0000-000000000001')
+    
+    try:
+        versions = get_prompt_versions(tenant_id, name)
+        if not versions:
+            flash(f"Prompt '{name}' not found", 'error')
+            return redirect(url_for('prompts.list_prompts'))
+            
+        return render_template('prompt_versions.html', prompt_name=name, versions=versions, authenticated=True)
+    except Exception as e:
+        flash(f"Error loading prompt versions: {str(e)}", 'error')
+        return redirect(url_for('prompts.list_prompts'))
+
+@prompts_bp.route('/prompts/rollback/<name>', methods=['GET', 'POST'])
+@require_auth
+def rollback_prompt(name):
+    """Rollback a prompt to a previous version"""
+    tenant_id = session.get('tenant_id', '00000000-0000-0000-0000-000000000001')
+    
+    try:
+        versions = get_prompt_versions(tenant_id, name)
+        if not versions:
+            flash(f"Prompt '{name}' not found", 'error')
+            return redirect(url_for('prompts.list_prompts'))
+        
+        form = RollbackForm()
+        # Populate version choices (exclude current active version)
+        inactive_versions = [(v['version'], f"Version {v['version']} - {v['created_at'].strftime('%Y-%m-%d %H:%M')}") 
+                           for v in versions if not v['is_active']]
+        form.version.choices = inactive_versions
+        
+        if form.validate_on_submit():
+            created_by_email = session.get('user_email', 'unknown@unknown.com')
+            prompt_manager = get_prompt_manager()
+            
+            success = prompt_manager.rollback_prompt_version(name, form.version.data, created_by_email)
+            if success:
+                flash(f"Prompt '{name}' rolled back to version {form.version.data} successfully", 'success')
+                return redirect(url_for('prompts.list_prompts'))
+            else:
+                flash(f"Error rolling back prompt '{name}'", 'error')
+        
+        return render_template('prompt_rollback.html', form=form, prompt_name=name, versions=versions, authenticated=True)
+    except Exception as e:
+        flash(f"Error during rollback: {str(e)}", 'error')
+        return redirect(url_for('prompts.list_prompts'))
+
+@prompts_bp.route('/prompts/migrate', methods=['POST'])
+@require_auth
+def migrate_prompts():
+    """Migrate prompts from files to database"""
+    try:
+        created_by_email = session.get('user_email', 'migration@system.com')
+        prompt_manager = get_prompt_manager()
+        success = prompt_manager.migrate_file_prompts(created_by_email)
+        
+        if success:
+            flash("Prompts migrated to database successfully", 'success')
+        else:
+            flash("Error migrating prompts to database", 'error')
+    except Exception as e:
+        flash(f"Error during migration: {str(e)}", 'error')
+        
     return redirect(url_for('prompts.list_prompts'))

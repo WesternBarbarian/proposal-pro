@@ -1,0 +1,91 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Versions of "{{ prompt_name }}"</h2>
+    
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{{ url_for('prompts.list_prompts') }}" class="btn btn-secondary">
+            <i data-feather="arrow-left"></i> Back to Prompts
+        </a>
+        <a href="{{ url_for('prompts.rollback_prompt', name=prompt_name) }}" class="btn btn-warning">
+            <i data-feather="rotate-ccw"></i> Rollback
+        </a>
+    </div>
+    
+    {% if versions and versions|length > 0 %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Status</th>
+                    <th>Description</th>
+                    <th>Created By</th>
+                    <th>Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for version in versions %}
+                <tr>
+                    <td>{{ version.version }}</td>
+                    <td>
+                        {% if version.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ version.description or '-' }}</td>
+                    <td>{{ version.created_by_email }}</td>
+                    <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" 
+                                onclick="showVersionDetails('{{ version.version }}', `{{ version.user_prompt|replace('`', '\\`')|replace('\\', '\\\\')|replace('\n', '\\n')|replace('\r', '\\r') }}`, `{{ (version.system_instruction or '')|replace('`', '\\`')|replace('\\', '\\\\')|replace('\n', '\\n')|replace('\r', '\\r') }}`)">
+                            <i data-feather="eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <p>No versions found for this prompt.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal for viewing version details -->
+<div class="modal fade" id="versionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Version <span id="versionNumber"></span> Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>System Instruction:</h6>
+                <pre id="systemInstruction" class="bg-light p-2 rounded"></pre>
+                
+                <h6>User Prompt:</h6>
+                <pre id="userPrompt" class="bg-light p-2 rounded"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showVersionDetails(version, userPrompt, systemInstruction) {
+    document.getElementById('versionNumber').textContent = version;
+    document.getElementById('userPrompt').textContent = userPrompt;
+    document.getElementById('systemInstruction').textContent = systemInstruction || 'None';
+    
+    const modal = new bootstrap.Modal(document.getElementById('versionModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

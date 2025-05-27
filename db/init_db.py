@@ -148,6 +148,33 @@ def create_tables():
         execute_query(create_proposals_table, fetch=False)
         logger.info("Proposals table created successfully")
 
+        # Create prompts table with version control
+        create_prompts_table = """
+        CREATE TABLE IF NOT EXISTS prompts (
+          id                   UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
+          tenant_id            UUID      NOT NULL REFERENCES tenants(id),
+          name                 TEXT      NOT NULL,
+          description          TEXT,
+          system_instruction   TEXT,
+          user_prompt          TEXT      NOT NULL,
+          version              INTEGER   NOT NULL DEFAULT 1,
+          is_active            BOOLEAN   NOT NULL DEFAULT true,
+          created_by_email     TEXT      NOT NULL,
+          created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+          updated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+          deleted_at           TIMESTAMPTZ               -- soft-delete flag
+        );
+
+        -- Create indexes for better performance
+        CREATE INDEX IF NOT EXISTS idx_prompts_tenant_id ON prompts(tenant_id);
+        CREATE INDEX IF NOT EXISTS idx_prompts_name ON prompts(name);
+        CREATE INDEX IF NOT EXISTS idx_prompts_active ON prompts(is_active);
+        CREATE UNIQUE INDEX IF NOT EXISTS ux_prompts_tenant_name_active ON prompts(tenant_id, name) WHERE is_active = true;
+        """
+
+        execute_query(create_prompts_table, fetch=False)
+        logger.info("Prompts table created successfully")
+
         return True
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")

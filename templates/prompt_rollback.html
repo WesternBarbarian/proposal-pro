@@ -1,0 +1,71 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">Rollback "{{ prompt_name }}"</h2>
+    
+    <div class="alert alert-warning">
+        <i data-feather="alert-triangle"></i>
+        <strong>Warning:</strong> Rolling back will create a new version based on the selected previous version. The current active version will be deactivated.
+    </div>
+    
+    <form method="POST" class="mb-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <div class="mb-3">
+            <label for="version" class="form-label">Select Version to Rollback To</label>
+            <select class="form-select" id="version" name="version" required>
+                <option value="">Choose a version...</option>
+                {% for version_id, version_label in form.version.choices %}
+                <option value="{{ version_id }}">{{ version_label }}</option>
+                {% endfor %}
+            </select>
+            {% if form.version.errors %}
+            <div class="invalid-feedback d-block">
+                {% for error in form.version.errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('prompts.view_prompt_versions', name=prompt_name) }}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn btn-warning">
+                <i data-feather="rotate-ccw"></i> Rollback
+            </button>
+        </div>
+    </form>
+    
+    <h5>Current Versions:</h5>
+    <div class="table-responsive">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Version</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                    <th>Created By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for version in versions %}
+                <tr>
+                    <td>{{ version.version }}</td>
+                    <td>
+                        {% if version.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ version.created_by_email }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
