@@ -398,6 +398,46 @@ def update_estimate_data():
         logging.error(f"Error updating estimate data: {str(e)}", exc_info=True)
         return {'success': False, 'message': str(e)}, 500
 
+@estimates_bp.route('/update_line_items', methods=['POST'])
+@require_auth
+def update_line_items():
+    try:
+        # Get current estimate result from session
+        estimate_result = session.get('estimate_result')
+        if not estimate_result:
+            return jsonify({'success': False, 'message': 'No estimate data found in session'}), 400
+
+        # Get the updated line items from request
+        data = request.get_json()
+        if not data or 'line_items' not in data:
+            return jsonify({'success': False, 'message': 'No line items data provided'}), 400
+
+        # Update the line items in the estimate result
+        estimate_result['line_items'] = data['line_items']
+        estimate_result['total_cost'] = data['line_items']['sub_total']
+
+        # Update session
+        session['estimate_result'] = estimate_result
+        session.modified = True
+
+        # Also update the backup JSON file
+        try:
+            with open(f'estimate_{ESTIMATE_ID}.json', 'w') as f:
+                json.dump(estimate_result, f, indent=4)
+        except Exception as e:
+            logging.error(f"Error updating estimate data file: {str(e)}")
+
+        logging.info("Line items updated successfully")
+        return jsonify({
+            'success': True, 
+            'message': 'Line items updated successfully',
+            'total_cost': data['line_items']['sub_total']
+        })
+
+    except Exception as e:
+        logging.error(f"Error updating line items: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @estimates_bp.route('/save_to_drive', methods=['POST'])
 @require_auth
 def save_to_drive():

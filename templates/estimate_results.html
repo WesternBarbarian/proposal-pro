@@ -82,38 +82,99 @@
     </form>
 
     <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h4>Line Items</h4>
+            <button type="button" class="btn btn-sm btn-outline-primary" id="editLineItemsBtn">
+                <i data-feather="edit"></i> Edit
+            </button>
         </div>
         <div class="card-body">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Quantity</th>
-                        <th>Unit</th>
-                        <th>Price</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in line_items['lines'] %}
-                    <tr>
-                        <td>{{ item['name'] }}</td>
-                        <td>{{ item['quantity'] }}</td>
-                        <td>{{ item['unit'] }}</td>
-                        <td>${{ "%.2f"|format(item['price']) }}</td>
-                        <td>${{ "%.2f"|format(item['total']) }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="4" class="text-end"><strong>Total:</strong></td>
-                        <td><strong>${{ "%.2f"|format(total_cost) }}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
+            <div id="lineItemsView">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lineItemsTableBody">
+                        {% for item in line_items['lines'] %}
+                        <tr>
+                            <td>{{ item['name'] }}</td>
+                            <td>{{ item['quantity'] }}</td>
+                            <td>{{ item['unit'] }}</td>
+                            <td>${{ "%.2f"|format(item['price']) }}</td>
+                            <td>${{ "%.2f"|format(item['total']) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                            <td><strong id="totalCost">${{ "%.2f"|format(total_cost) }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div id="lineItemsEdit" style="display: none;">
+                <div class="mb-3">
+                    <button type="button" class="btn btn-success btn-sm" id="addLineItemBtn">
+                        <i data-feather="plus"></i> Add Item
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Unit</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="editableLineItems">
+                            {% for loop in line_items['lines'] %}
+                            <tr data-index="{{ loop.index0 }}">
+                                <td>
+                                    <input type="text" class="form-control item-name" value="{{ loop['name'] }}">
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control item-quantity" value="{{ loop['quantity'] }}" min="0">
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control item-unit" value="{{ loop['unit'] }}">
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" class="form-control item-price" value="{{ loop['price'] }}" min="0">
+                                </td>
+                                <td class="item-total">${{ "%.2f"|format(loop['total']) }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-danger btn-sm remove-item">
+                                        <i data-feather="trash-2"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" class="text-end"><strong>Total:</strong></td>
+                                <td><strong id="editTotalCost">${{ "%.2f"|format(total_cost) }}</strong></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-success btn-sm" id="saveLineItemsBtn">Save Changes</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="cancelLineItemsBtn">Cancel</button>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -221,6 +282,170 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Error updating project details');
         });
     });
+
+    // Line Items editing
+    const editLineItemsBtn = document.getElementById('editLineItemsBtn');
+    const saveLineItemsBtn = document.getElementById('saveLineItemsBtn');
+    const cancelLineItemsBtn = document.getElementById('cancelLineItemsBtn');
+    const addLineItemBtn = document.getElementById('addLineItemBtn');
+    const lineItemsView = document.getElementById('lineItemsView');
+    const lineItemsEdit = document.getElementById('lineItemsEdit');
+
+    editLineItemsBtn.addEventListener('click', function() {
+        lineItemsView.style.display = 'none';
+        lineItemsEdit.style.display = 'block';
+        updateLineItemTotals();
+    });
+
+    cancelLineItemsBtn.addEventListener('click', function() {
+        lineItemsView.style.display = 'block';
+        lineItemsEdit.style.display = 'none';
+        // Reset to original values
+        location.reload();
+    });
+
+    addLineItemBtn.addEventListener('click', function() {
+        const tbody = document.getElementById('editableLineItems');
+        const newIndex = tbody.children.length;
+        const newRow = document.createElement('tr');
+        newRow.dataset.index = newIndex;
+        newRow.innerHTML = `
+            <td>
+                <input type="text" class="form-control item-name" value="" placeholder="Item name">
+            </td>
+            <td>
+                <input type="number" class="form-control item-quantity" value="0" min="0">
+            </td>
+            <td>
+                <input type="text" class="form-control item-unit" value="" placeholder="Unit">
+            </td>
+            <td>
+                <input type="number" step="0.01" class="form-control item-price" value="0.00" min="0">
+            </td>
+            <td class="item-total">$0.00</td>
+            <td>
+                <button type="button" class="btn btn-danger btn-sm remove-item">
+                    <i data-feather="trash-2"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(newRow);
+        
+        // Add event listeners to new row
+        addRowEventListeners(newRow);
+        feather.replace();
+        updateLineItemTotals();
+    });
+
+    function addRowEventListeners(row) {
+        const quantityInput = row.querySelector('.item-quantity');
+        const priceInput = row.querySelector('.item-price');
+        const removeBtn = row.querySelector('.remove-item');
+
+        quantityInput.addEventListener('input', updateLineItemTotals);
+        priceInput.addEventListener('input', updateLineItemTotals);
+        
+        removeBtn.addEventListener('click', function() {
+            row.remove();
+            updateLineItemTotals();
+        });
+    }
+
+    function updateLineItemTotals() {
+        const rows = document.querySelectorAll('#editableLineItems tr');
+        let grandTotal = 0;
+
+        rows.forEach(row => {
+            const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
+            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            const total = quantity * price;
+            
+            row.querySelector('.item-total').textContent = `$${total.toFixed(2)}`;
+            grandTotal += total;
+        });
+
+        document.getElementById('editTotalCost').textContent = `$${grandTotal.toFixed(2)}`;
+    }
+
+    // Add event listeners to existing rows
+    document.querySelectorAll('#editableLineItems tr').forEach(addRowEventListeners);
+
+    saveLineItemsBtn.addEventListener('click', function() {
+        const rows = document.querySelectorAll('#editableLineItems tr');
+        const lineItems = [];
+
+        rows.forEach(row => {
+            const name = row.querySelector('.item-name').value.trim();
+            const quantity = parseInt(row.querySelector('.item-quantity').value) || 0;
+            const unit = row.querySelector('.item-unit').value.trim();
+            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            const total = quantity * price;
+
+            if (name) { // Only include items with names
+                lineItems.push({
+                    name: name,
+                    quantity: quantity,
+                    unit: unit,
+                    price: price,
+                    total: total
+                });
+            }
+        });
+
+        const updateData = {
+            line_items: {
+                lines: lineItems,
+                sub_total: lineItems.reduce((sum, item) => sum + item.total, 0)
+            }
+        };
+
+        fetch('{{ url_for("estimates.update_line_items") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            },
+            body: JSON.stringify(updateData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the view table
+                updateViewTable(lineItems, data.total_cost);
+                
+                // Update the hidden form fields for proposal generation
+                document.querySelector('input[name="line_items"]').value = JSON.stringify(updateData.line_items);
+                
+                lineItemsView.style.display = 'block';
+                lineItemsEdit.style.display = 'none';
+            } else {
+                alert('Error updating line items: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error updating line items');
+        });
+    });
+
+    function updateViewTable(lineItems, totalCost) {
+        const tbody = document.getElementById('lineItemsTableBody');
+        tbody.innerHTML = '';
+
+        lineItems.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.name}</td>
+                <td>${item.quantity}</td>
+                <td>${item.unit}</td>
+                <td>$${item.price.toFixed(2)}</td>
+                <td>$${item.total.toFixed(2)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        document.getElementById('totalCost').textContent = `$${totalCost.toFixed(2)}`;
+    }
 });
 </script>
 {% endblock %}
