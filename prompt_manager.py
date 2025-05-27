@@ -232,25 +232,30 @@ class PromptManager:
         """Migrate prompts from files to database"""
         if not tenant_id:
             tenant_id = self._get_tenant_id()
+            
+        if not tenant_id:
+            # Try to create a default tenant only if we're in a non-session context
+            tenant_id = self._ensure_default_tenant_exists()
             if not tenant_id:
-                # Try to create a default tenant
-                tenant_id = self._ensure_default_tenant_exists()
-                if not tenant_id:
-                    logger.error("No tenant ID available and cannot create default tenant, cannot migrate prompts")
-                    return False
+                logger.error("No tenant ID available and cannot create default tenant, cannot migrate prompts")
+                return False
             
         if not os.path.exists(self.prompts_dir):
             logger.warning(f"Prompts directory '{self.prompts_dir}' does not exist.")
             return True
             
         migrated_count = 0
+        logger.info(f"Starting migration for tenant_id: {tenant_id}")
+        
         for filename in os.listdir(self.prompts_dir):
             if filename.endswith('.json'):
                 prompt_name = os.path.splitext(filename)[0]
                 try:
                     with open(os.path.join(self.prompts_dir, filename), 'r') as f:
                         prompt_data = json.load(f)
-                        
+                    
+                    logger.debug(f"Processing prompt file: {filename}")
+                    
                     # Check if prompt already exists in database
                     existing = get_prompt_by_name(tenant_id, prompt_name)
                     if not existing:
@@ -262,6 +267,7 @@ class PromptManager:
                         
                 except Exception as e:
                     logger.error(f"Error migrating prompt '{prompt_name}': {str(e)}")
+                    logger.exception("Full error details:")
                     
         logger.info(f"Migration completed. Migrated {migrated_count} prompts")
         # Refresh cached prompts

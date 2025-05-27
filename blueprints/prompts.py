@@ -195,8 +195,30 @@ def migrate_prompts():
     """Migrate prompts from files to database"""
     try:
         created_by_email = session.get('user_email', 'migration@system.com')
+        tenant_id = session.get('tenant_id')
+        
+        # If no tenant_id in session, try to get or create one
+        if not tenant_id:
+            from db.tenants import get_tenant_id_by_user_email
+            from db.connection import execute_query
+            
+            user_email = session.get('user_email')
+            if user_email:
+                tenant_id = get_tenant_id_by_user_email(user_email)
+            
+            # If still no tenant, get the first available tenant
+            if not tenant_id:
+                result = execute_query("SELECT id FROM tenants WHERE deleted_at IS NULL LIMIT 1;")
+                if result and len(result) > 0:
+                    tenant_id = result[0]['id']
+                    session['tenant_id'] = tenant_id
+        
+        if not tenant_id:
+            flash("No tenant found. Please contact administrator.", 'error')
+            return redirect(url_for('prompts.list_prompts'))
+        
         prompt_manager = get_prompt_manager()
-        success = prompt_manager.migrate_file_prompts(created_by_email)
+        success = prompt_manager.migrate_file_prompts(created_by_email, tenant_id)
         
         if success:
             flash("Prompts migrated to database successfully", 'success')
@@ -204,5 +226,6 @@ def migrate_prompts():
             flash("Error migrating prompts to database", 'error')
     except Exception as e:
         flash(f"Error during migration: {str(e)}", 'error')
+        logging.error(f"Migration error: {str(e)}")
         
     return redirect(url_for('prompts.list_prompts'))
