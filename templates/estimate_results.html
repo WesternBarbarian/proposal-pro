@@ -138,21 +138,21 @@
                             </tr>
                         </thead>
                         <tbody id="editableLineItems">
-                            {% for loop in line_items['lines'] %}
+                            {% for item in line_items['lines'] %}
                             <tr data-index="{{ loop.index0 }}">
                                 <td>
-                                    <input type="text" class="form-control item-name" value="{{ loop['name'] }}">
+                                    <input type="text" class="form-control item-name" value="{{ item['name'] }}">
                                 </td>
                                 <td>
-                                    <input type="number" class="form-control item-quantity" value="{{ loop['quantity'] }}" min="0">
+                                    <input type="number" class="form-control item-quantity" value="{{ item['quantity'] }}" min="0">
                                 </td>
                                 <td>
-                                    <input type="text" class="form-control item-unit" value="{{ loop['unit'] }}">
+                                    <input type="text" class="form-control item-unit" value="{{ item['unit'] }}">
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" class="form-control item-price" value="{{ loop['price'] }}" min="0">
+                                    <input type="number" step="0.01" class="form-control item-price" value="{{ item['price'] }}" min="0">
                                 </td>
-                                <td class="item-total">${{ "%.2f"|format(loop['total']) }}</td>
+                                <td class="item-total">${{ "%.2f"|format(item['total']) }}</td>
                                 <td>
                                     <button type="button" class="btn btn-danger btn-sm remove-item">
                                         <i data-feather="trash-2"></i>
