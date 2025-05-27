@@ -193,6 +193,11 @@ def rollback_prompt(name):
 @require_auth
 def migrate_prompts():
     """Migrate prompts from files to database"""
+    import os
+    import json
+    from db.prompts import get_active_prompts, migrate_prompt_from_file, get_prompt_by_name
+    from db.connection import execute_query
+    
     try:
         created_by_email = session.get('user_email', 'migration@system.com')
         tenant_id = session.get('tenant_id')
@@ -200,7 +205,6 @@ def migrate_prompts():
         # If no tenant_id in session, try to get or create one
         if not tenant_id:
             from db.tenants import get_tenant_id_by_user_email
-            from db.connection import execute_query
             
             user_email = session.get('user_email')
             if user_email:
@@ -217,38 +221,55 @@ def migrate_prompts():
             flash("No tenant found. Please contact administrator.", 'error')
             return redirect(url_for('prompts.list_prompts'))
         
-        # Check if prompts already exist first
-        from db.prompts import get_active_prompts
-        existing_prompts = get_active_prompts(tenant_id)
-        existing_names = [p['name'] for p in existing_prompts]
+        logging.info(f"Starting migration for tenant: {tenant_id}")
         
-        # Load prompt files and check what needs to be migrated
-        import os
-        import json
+        # Load prompt files and migrate them directly
         prompts_dir = "prompts"
-        files_to_migrate = []
+        migrated_count = 0
+        skipped_count = 0
         
-        if os.path.exists(prompts_dir):
-            for filename in os.listdir(prompts_dir):
-                if filename.endswith('.json'):
-                    prompt_name = os.path.splitext(filename)[0]
-                    if prompt_name not in existing_names:
-                        files_to_migrate.append(prompt_name)
+        if not os.path.exists(prompts_dir):
+            flash("Prompts directory not found", 'warning')
+            return redirect(url_for('prompts.list_prompts'))
         
-        if not files_to_migrate:
-            flash("All prompts are already in the database", 'info')
+        for filename in os.listdir(prompts_dir):
+            if filename.endswith('.json'):
+                prompt_name = os.path.splitext(filename)[0]
+                try:
+                    # Check if prompt already exists
+                    existing = get_prompt_by_name(tenant_id, prompt_name)
+                    if existing:
+                        logging.info(f"Prompt '{prompt_name}' already exists, skipping")
+                        skipped_count += 1
+                        continue
+                    
+                    # Load and migrate the prompt
+                    with open(os.path.join(prompts_dir, filename), 'r') as f:
+                        prompt_data = json.load(f)
+                    
+                    logging.info(f"Migrating prompt: {prompt_name}")
+                    migrate_prompt_from_file(tenant_id, prompt_data, created_by_email)
+                    migrated_count += 1
+                    logging.info(f"Successfully migrated: {prompt_name}")
+                    
+                except Exception as e:
+                    logging.error(f"Error migrating prompt '{prompt_name}': {str(e)}")
+                    flash(f"Error migrating prompt '{prompt_name}': {str(e)}", 'error')
+        
+        # Verify migration by checking database
+        final_prompts = get_active_prompts(tenant_id)
+        total_in_db = len(final_prompts)
+        
+        if migrated_count > 0:
+            flash(f"Migration completed! Migrated {migrated_count} prompts, skipped {skipped_count}. Total prompts in database: {total_in_db}", 'success')
+        elif skipped_count > 0:
+            flash(f"All {skipped_count} prompts already exist in database. Total prompts: {total_in_db}", 'info')
         else:
-            # Only migrate files that don't exist
-            prompt_manager = get_prompt_manager()
-            success = prompt_manager.migrate_file_prompts(created_by_email, tenant_id)
-            
-            if success:
-                flash(f"Prompts migrated successfully: {', '.join(files_to_migrate)}", 'success')
-            else:
-                flash("Error migrating prompts to database", 'error')
+            flash("No prompts found to migrate", 'warning')
                 
     except Exception as e:
         flash(f"Error during migration: {str(e)}", 'error')
         logging.error(f"Migration error: {str(e)}")
+        logging.exception("Full migration error details:")
         
     return redirect(url_for('prompts.list_prompts'))
