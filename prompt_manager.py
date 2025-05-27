@@ -228,15 +228,16 @@ class PromptManager:
         
         return None
 
-    def migrate_file_prompts(self, created_by_email: str = 'system@migration') -> bool:
+    def migrate_file_prompts(self, created_by_email: str = 'system@migration.local', tenant_id: str = None) -> bool:
         """Migrate prompts from files to database"""
-        tenant_id = self._get_tenant_id()
         if not tenant_id:
-            # Try to create a default tenant
-            tenant_id = self._ensure_default_tenant_exists()
+            tenant_id = self._get_tenant_id()
             if not tenant_id:
-                logger.error("No tenant ID available and cannot create default tenant, cannot migrate prompts")
-                return False
+                # Try to create a default tenant
+                tenant_id = self._ensure_default_tenant_exists()
+                if not tenant_id:
+                    logger.error("No tenant ID available and cannot create default tenant, cannot migrate prompts")
+                    return False
             
         if not os.path.exists(self.prompts_dir):
             logger.warning(f"Prompts directory '{self.prompts_dir}' does not exist.")
