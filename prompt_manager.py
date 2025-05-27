@@ -18,16 +18,43 @@ class PromptManager:
         # Migration will be handled separately
     
     def _get_tenant_id(self) -> Optional[str]:
-        """Get current tenant ID from session"""
-        # For now, return a default tenant ID if not in session
-        # In production, this should come from the authenticated user session
-        return session.get('tenant_id', '00000000-0000-0000-0000-000000000001')
+        """Get current tenant ID from session or user email"""
+        # First try to get tenant_id from session
+        tenant_id = session.get('tenant_id')
+        if tenant_id:
+            return tenant_id
+            
+        # If no tenant_id in session, try to get it from user email
+        user_email = session.get('user_email')
+        if user_email:
+            from db.tenants import get_tenant_id_by_user_email
+            tenant_id = get_tenant_id_by_user_email(user_email)
+            if tenant_id:
+                session['tenant_id'] = tenant_id
+                return tenant_id
+        
+        # If still no tenant found, check if any tenants exist and return the first one
+        # This is a fallback for initial setup scenarios
+        try:
+            from db.connection import execute_query
+            result = execute_query("SELECT id FROM tenants WHERE deleted_at IS NULL LIMIT 1;")
+            if result and len(result) > 0:
+                fallback_tenant_id = result[0]['id']
+                logger.warning(f"Using fallback tenant ID: {fallback_tenant_id}")
+                return fallback_tenant_id
+        except Exception as e:
+            logger.error(f"Error getting fallback tenant ID: {str(e)}")
+        
+        # Return None if no tenant can be found
+        logger.error("No tenant ID available for prompt operations")
+        return None
     
     def _load_all_prompts(self) -> None:
         """Load all prompts from database for current tenant"""
         tenant_id = self._get_tenant_id()
         if not tenant_id:
-            logger.warning("No tenant ID available, cannot load prompts")
+            logger.warning("No tenant ID available, loading prompts from files as fallback")
+            self._load_from_files()
             return
             
         try:
@@ -165,12 +192,51 @@ class PromptManager:
             logger.error(f"Error deleting prompt '{name}': {str(e)}")
             return False
 
+    def _ensure_default_tenant_exists(self) -> Optional[str]:
+        """Ensure a default tenant exists for system operations"""
+        try:
+            from db.connection import execute_query
+            
+            # Check if any tenants exist
+            result = execute_query("SELECT id FROM tenants WHERE deleted_at IS NULL LIMIT 1;")
+            if result and len(result) > 0:
+                return result[0]['id']
+            
+            # Create a default tenant if none exist
+            create_tenant_query = """
+            INSERT INTO tenants (name, plan_level, subscription_start, subscription_end, billing_email)
+            VALUES ('Default Tenant', 'basic', CURRENT_DATE, CURRENT_DATE + INTERVAL '1 year', 'admin@system')
+            RETURNING id;
+            """
+            result = execute_query(create_tenant_query)
+            if result and len(result) > 0:
+                tenant_id = result[0]['id']
+                logger.info(f"Created default tenant with ID: {tenant_id}")
+                
+                # Create a default system user for this tenant
+                create_user_query = """
+                INSERT INTO users (tenant_id, email, name, role)
+                VALUES (%s, 'system@migration', 'System Migration User', 'TENANT_ADMIN');
+                """
+                execute_query(create_user_query, (tenant_id,), fetch=False)
+                logger.info("Created default system user")
+                
+                return tenant_id
+            
+        except Exception as e:
+            logger.error(f"Error creating default tenant: {str(e)}")
+        
+        return None
+
     def migrate_file_prompts(self, created_by_email: str = 'system@migration') -> bool:
         """Migrate prompts from files to database"""
         tenant_id = self._get_tenant_id()
         if not tenant_id:
-            logger.error("No tenant ID available, cannot migrate prompts")
-            return False
+            # Try to create a default tenant
+            tenant_id = self._ensure_default_tenant_exists()
+            if not tenant_id:
+                logger.error("No tenant ID available and cannot create default tenant, cannot migrate prompts")
+                return False
             
         if not os.path.exists(self.prompts_dir):
             logger.warning(f"Prompts directory '{self.prompts_dir}' does not exist.")
