@@ -234,42 +234,42 @@ class PromptManager:
             tenant_id = self._get_tenant_id()
             
         if not tenant_id:
-            # Try to create a default tenant only if we're in a non-session context
-            tenant_id = self._ensure_default_tenant_exists()
-            if not tenant_id:
-                logger.error("No tenant ID available and cannot create default tenant, cannot migrate prompts")
-                return False
+            logger.error("No tenant ID available, cannot migrate prompts")
+            return False
             
         if not os.path.exists(self.prompts_dir):
             logger.warning(f"Prompts directory '{self.prompts_dir}' does not exist.")
             return True
             
         migrated_count = 0
+        skipped_count = 0
         logger.info(f"Starting migration for tenant_id: {tenant_id}")
         
         for filename in os.listdir(self.prompts_dir):
             if filename.endswith('.json'):
                 prompt_name = os.path.splitext(filename)[0]
                 try:
+                    # Check if prompt already exists in database first
+                    existing = get_prompt_by_name(tenant_id, prompt_name)
+                    if existing:
+                        logger.info(f"Prompt '{prompt_name}' already exists in database, skipping")
+                        skipped_count += 1
+                        continue
+                    
                     with open(os.path.join(self.prompts_dir, filename), 'r') as f:
                         prompt_data = json.load(f)
                     
                     logger.debug(f"Processing prompt file: {filename}")
                     
-                    # Check if prompt already exists in database
-                    existing = get_prompt_by_name(tenant_id, prompt_name)
-                    if not existing:
-                        migrate_prompt_from_file(tenant_id, prompt_data, created_by_email)
-                        migrated_count += 1
-                        logger.info(f"Migrated prompt: {prompt_name}")
-                    else:
-                        logger.info(f"Prompt '{prompt_name}' already exists in database, skipping")
+                    migrate_prompt_from_file(tenant_id, prompt_data, created_by_email)
+                    migrated_count += 1
+                    logger.info(f"Migrated prompt: {prompt_name}")
                         
                 except Exception as e:
                     logger.error(f"Error migrating prompt '{prompt_name}': {str(e)}")
                     logger.exception("Full error details:")
                     
-        logger.info(f"Migration completed. Migrated {migrated_count} prompts")
+        logger.info(f"Migration completed. Migrated {migrated_count} prompts, skipped {skipped_count} existing prompts")
         # Refresh cached prompts
         self._load_all_prompts()
         return True

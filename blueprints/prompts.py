@@ -217,13 +217,36 @@ def migrate_prompts():
             flash("No tenant found. Please contact administrator.", 'error')
             return redirect(url_for('prompts.list_prompts'))
         
-        prompt_manager = get_prompt_manager()
-        success = prompt_manager.migrate_file_prompts(created_by_email, tenant_id)
+        # Check if prompts already exist first
+        from db.prompts import get_active_prompts
+        existing_prompts = get_active_prompts(tenant_id)
+        existing_names = [p['name'] for p in existing_prompts]
         
-        if success:
-            flash("Prompts migrated to database successfully", 'success')
+        # Load prompt files and check what needs to be migrated
+        import os
+        import json
+        prompts_dir = "prompts"
+        files_to_migrate = []
+        
+        if os.path.exists(prompts_dir):
+            for filename in os.listdir(prompts_dir):
+                if filename.endswith('.json'):
+                    prompt_name = os.path.splitext(filename)[0]
+                    if prompt_name not in existing_names:
+                        files_to_migrate.append(prompt_name)
+        
+        if not files_to_migrate:
+            flash("All prompts are already in the database", 'info')
         else:
-            flash("Error migrating prompts to database", 'error')
+            # Only migrate files that don't exist
+            prompt_manager = get_prompt_manager()
+            success = prompt_manager.migrate_file_prompts(created_by_email, tenant_id)
+            
+            if success:
+                flash(f"Prompts migrated successfully: {', '.join(files_to_migrate)}", 'success')
+            else:
+                flash("Error migrating prompts to database", 'error')
+                
     except Exception as e:
         flash(f"Error during migration: {str(e)}", 'error')
         logging.error(f"Migration error: {str(e)}")
