@@ -25,6 +25,23 @@ def is_admin_user(email):
         # Return False on error instead of falling back to config
         return False
 
+def get_tenant_id_by_user_email(email):
+    """Get tenant ID for a given user email."""
+    try:
+        query = """
+        SELECT tenant_id FROM users 
+        WHERE email = %s
+        AND deleted_at IS NULL;
+        """
+        result = execute_query(query, (email,))
+
+        if result and len(result) > 0:
+            return result[0]['tenant_id']
+        return None
+    except Exception as e:
+        logger.error(f"Error getting tenant ID for user: {e}")
+        return None
+
 def update_allowed_users_from_db():
     """
     Get all tenants with plan_level 'super' or 'basic'
