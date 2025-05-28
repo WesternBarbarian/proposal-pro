@@ -1,4 +1,3 @@
-
 import logging
 from db.connection import execute_query
 
@@ -6,23 +5,24 @@ from db.connection import execute_query
 logger = logging.getLogger(__name__)
 
 def is_admin_user(email):
-    """Check if a user is an admin user with session management permissions."""
+    """Check if a user has admin privileges"""
+    if not email:
+        return False
+
     try:
-        # Query database for admin users (users with role SUPER_ADMIN or TENANT_ADMIN)
         query = """
-        SELECT email FROM users
-        WHERE role IN ('SUPER_ADMIN', 'TENANT_ADMIN')
-        AND deleted_at IS NULL;
+        SELECT role FROM users 
+        WHERE email = %s AND deleted_at IS NULL;
         """
-        result = execute_query(query)
-        
-        # Extract admin emails from result
-        admin_emails = [user['email'] for user in result if user.get('email')]
-        
-        return email in admin_emails
+        result = execute_query(query, (email,))
+
+        if result and len(result) > 0:
+            role = result[0]['role']
+            return role in ['SUPER_ADMIN', 'TENANT_ADMIN']
+
+        return False
     except Exception as e:
-        logger.error(f"Error checking admin status: {e}")
-        # Return False on error instead of falling back to config
+        logger.error(f"Error checking admin status for {email}: {e}")
         return False
 
 def get_tenant_id_by_user_email(email):
@@ -53,7 +53,7 @@ def update_allowed_users_from_db():
         WHERE tenants.plan_level IN ('super', 'basic')
         AND users.deleted_at IS NULL;
         """
-        
+
         result = execute_query(query)
         if result:
             return [tenant['email'] for tenant in result if tenant.get('email')]
