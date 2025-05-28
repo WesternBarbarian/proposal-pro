@@ -632,8 +632,14 @@ def save_to_drive():
         customer_name = customer.get('name', 'Unknown')
         project_address = customer.get('project_address', 'Unknown')
 
-        # Create folder structure in Google Drive
-        project_folder_id = create_folder_if_not_exists("Project Proposals")
+        # Create folder structure in Google Drive using tenant settings
+        from db.tenants import get_tenant_id_by_user_email
+        from google_services import get_or_create_project_folder
+        
+        user_email = session.get('user_email')
+        tenant_id = get_tenant_id_by_user_email(user_email) if user_email else None
+        
+        project_folder_id = get_or_create_project_folder(tenant_id, customer, estimate_result)
         if not project_folder_id:
             flash('Failed to create or access Google Drive folder.', 'error')
             return redirect(url_for('estimates.create_proposal'))

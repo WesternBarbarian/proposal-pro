@@ -114,13 +114,16 @@ def append_to_sheet(spreadsheet_id, values):
     return result
 
 @retry_with_backoff(max_retries=3)
-def create_folder_if_not_exists(folder_name):
+def create_folder_if_not_exists(folder_name, parent_folder_id=None):
     drive_service = get_drive_service()
     if not drive_service:
         return None
 
-    # Search for existing folder
+    # Build search query
     query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+    if parent_folder_id:
+        query += f" and '{parent_folder_id}' in parents"
+
     results = drive_service.files().list(q=query, spaces='drive').execute()
     items = results.get('files', [])
 
@@ -132,8 +135,57 @@ def create_folder_if_not_exists(folder_name):
         'name': folder_name,
         'mimeType': 'application/vnd.google-apps.folder'
     }
+    
+    if parent_folder_id:
+        folder_metadata['parents'] = [parent_folder_id]
+    
     folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
     return folder.get('id')
+
+def get_or_create_project_folder(tenant_id, customer_data=None, project_data=None):
+    """Get or create the appropriate project folder based on tenant settings."""
+    from db.drive_settings import get_folder_template, get_auto_organize_setting, get_subfolder_template
+    from db.tenants import get_tenant_id_by_user_email
+    from flask import session
+    
+    # Get tenant-specific folder template
+    if not tenant_id:
+        user_email = session.get('user_email')
+        if user_email:
+            tenant_id = get_tenant_id_by_user_email(user_email)
+    
+    if not tenant_id:
+        # Fallback to default
+        return create_folder_if_not_exists("Project Proposals")
+    
+    # Get folder template
+    folder_template = get_folder_template(tenant_id)
+    auto_organize = get_auto_organize_setting(tenant_id)
+    
+    # Create root folder
+    root_folder_id = create_folder_if_not_exists(folder_template)
+    
+    if not auto_organize or not customer_data:
+        return root_folder_id
+    
+    # Create organized subfolders
+    subfolder_template = get_subfolder_template(tenant_id)
+    
+    # Replace template variables
+    if customer_data and 'name' in customer_data:
+        subfolder_name = subfolder_template.replace('{client_name}', customer_data['name'])
+        subfolder_name = subfolder_name.replace('{customer_name}', customer_data['name'])
+    else:
+        subfolder_name = "General Projects"
+    
+    # Add date-based organization if template includes it
+    if '{year}' in subfolder_template or '{month}' in subfolder_template:
+        from datetime import datetime
+        now = datetime.now()
+        subfolder_name = subfolder_name.replace('{year}', str(now.year))
+        subfolder_name = subfolder_name.replace('{month}', f"{now.month:02d}")
+    
+    return create_folder_if_not_exists(subfolder_name, root_folder_id)
 
 @retry_with_backoff(max_retries=3)
 def create_doc_in_folder(title, content, folder_id):
