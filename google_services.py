@@ -1,7 +1,38 @@
 
+import time
+import random
+import logging
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 from flask import session
+
+logger = logging.getLogger(__name__)
+
+def retry_with_backoff(max_retries=3, base_delay=1, max_delay=60):
+    """Decorator to add retry logic with exponential backoff for Google API calls"""
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except HttpError as e:
+                    # Check if it's a rate limit error (429) or server error (5xx)
+                    if e.resp.status in [429, 500, 502, 503, 504]:
+                        if attempt < max_retries:
+                            # Calculate delay with exponential backoff and jitter
+                            delay = min(base_delay * (2 ** attempt) + random.uniform(0, 1), max_delay)
+                            logger.warning(f"API call failed with status {e.resp.status}, retrying in {delay:.2f} seconds (attempt {attempt + 1}/{max_retries})")
+                            time.sleep(delay)
+                            continue
+                    # Re-raise the error if it's not retryable or max retries exceeded
+                    raise
+                except Exception as e:
+                    # For non-HTTP errors, don't retry
+                    raise
+            return None
+        return wrapper
+    return decorator
 
 def get_service(service_name, version):
     if 'credentials' not in session:
@@ -19,6 +50,7 @@ def get_docs_service():
 def get_sheets_service():
     return get_service('sheets', 'v4')
 
+@retry_with_backoff(max_retries=3)
 def create_tracking_sheet_if_not_exists(folder_id):
     drive_service = get_drive_service()
     sheets_service = get_sheets_service()
@@ -62,6 +94,7 @@ def create_tracking_sheet_if_not_exists(folder_id):
     
     return spreadsheet['spreadsheetId']
 
+@retry_with_backoff(max_retries=3)
 def append_to_sheet(spreadsheet_id, values):
     sheets_service = get_sheets_service()
     if not sheets_service:
@@ -80,6 +113,7 @@ def append_to_sheet(spreadsheet_id, values):
     
     return result
 
+@retry_with_backoff(max_retries=3)
 def create_folder_if_not_exists(folder_name):
     drive_service = get_drive_service()
     if not drive_service:
@@ -101,6 +135,7 @@ def create_folder_if_not_exists(folder_name):
     folder = drive_service.files().create(body=folder_metadata, fields='id').execute()
     return folder.get('id')
 
+@retry_with_backoff(max_retries=3)
 def create_doc_in_folder(title, content, folder_id):
     drive_service = get_drive_service()
     docs_service = get_docs_service()
