@@ -29,17 +29,24 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('proposals.proposal_templates') }}">Proposal Templates</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('prompts.list_prompts') }}">
+                            <i data-feather="edit-3"></i>
+                            Prompts
+                        </a>
+                    </li>
+                    {% if session.get('user_email') and is_admin_user(session.get('user_email')) %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('drive_settings.manage_drive_settings') }}">
+                            <i data-feather="folder"></i>
+                            Drive Settings
+                        </a>
+                    </li>
+                    {% endif %}
                 </ul>
                 <div class="navbar-nav">
                     {% if authenticated %}
                         <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary">Logout</a>
-
-            <li class="nav-item">
-              <a class="nav-link" href="{{ url_for('prompts.list_prompts') }}">
-                <i data-feather="edit-3"></i>
-                Prompts
-              </a>
-            </li>
 
                     {% else %}
                         <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login with Google</a>

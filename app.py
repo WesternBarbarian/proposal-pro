@@ -119,6 +119,23 @@ app.register_blueprint(prompts_bp)
 app.register_blueprint(drive_settings_bp)
 app.register_blueprint(admin_bp)
 
+# Define is_admin_user
+def is_admin_user():
+    """Check if the current user is an admin."""
+    user_id = session.get('user_id')
+    if user_id:
+        from db.users import get_user
+        user = get_user(user_id)
+        if user:
+            return user.is_admin
+    return False
+
+# Add is_admin_user to template context
+app.jinja_env.filters['markdown'] = lambda text: Markup(markdown.convert(text)) if text else Markup('')
+
+# Make is_admin_user available in templates
+app.jinja_env.globals['is_admin_user'] = is_admin_user
+
 # Initialize database
 init_db(app)
 
