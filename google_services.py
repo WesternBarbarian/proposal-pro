@@ -148,28 +148,36 @@ def get_or_create_project_folder(tenant_id, customer_data=None, project_data=Non
     from db.tenants import get_tenant_id_by_user_email
     from flask import session
     
+    logger.info(f"get_or_create_project_folder called with tenant_id: {tenant_id}, customer_data: {customer_data}")
+    
     # Get tenant-specific folder template
     if not tenant_id:
         user_email = session.get('user_email')
         if user_email:
             tenant_id = get_tenant_id_by_user_email(user_email)
+            logger.info(f"Retrieved tenant_id from user_email: {tenant_id}")
     
     if not tenant_id:
         # Fallback to default
+        logger.warning("No tenant_id found, using default folder")
         return create_folder_if_not_exists("Project Proposals")
     
     # Get folder template
-    folder_template = get_folder_template(tenant_id)
+    root_folder_name = get_folder_template(tenant_id)
     auto_organize = get_auto_organize_setting(tenant_id)
     
+    logger.info(f"Retrieved settings - root_folder_name: {root_folder_name}, auto_organize: {auto_organize}")
+    
     # Create root folder
-    root_folder_id = create_folder_if_not_exists(folder_template)
+    root_folder_id = create_folder_if_not_exists(root_folder_name)
     
     if not auto_organize or not customer_data:
+        logger.info(f"Not creating subfolders - auto_organize: {auto_organize}, customer_data: {customer_data}")
         return root_folder_id
     
     # Create organized subfolders
     subfolder_template = get_subfolder_template(tenant_id)
+    logger.info(f"Retrieved subfolder_template: {subfolder_template}")
     
     # Replace template variables
     if customer_data and 'name' in customer_data:
@@ -178,6 +186,8 @@ def get_or_create_project_folder(tenant_id, customer_data=None, project_data=Non
     else:
         subfolder_name = "General Projects"
     
+    logger.info(f"Created subfolder_name: {subfolder_name}")
+    
     # Add date-based organization if template includes it
     if '{year}' in subfolder_template or '{month}' in subfolder_template:
         from datetime import datetime
@@ -185,7 +195,9 @@ def get_or_create_project_folder(tenant_id, customer_data=None, project_data=Non
         subfolder_name = subfolder_name.replace('{year}', str(now.year))
         subfolder_name = subfolder_name.replace('{month}', f"{now.month:02d}")
     
-    return create_folder_if_not_exists(subfolder_name, root_folder_id)
+    final_folder_id = create_folder_if_not_exists(subfolder_name, root_folder_id)
+    logger.info(f"Final folder created with ID: {final_folder_id}")
+    return final_folder_id
 
 @retry_with_backoff(max_retries=3)
 def create_doc_in_folder(title, content, folder_id):
