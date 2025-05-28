@@ -14,6 +14,10 @@ class BaseConfig:
     SESSION_USE_SIGNER = True
     SESSION_FILE_THRESHOLD = 100
     
+    # Multi-tenant session settings
+    TENANT_SESSION_ISOLATION = True
+    TENANT_SESSION_CLEANUP_INTERVAL = 3600  # 1 hour
+    
     # Session cleanup settings
     MAX_SESSION_FILES = 20
     SESSION_CLEANUP_THRESHOLD = 86400  # 24 hours in seconds

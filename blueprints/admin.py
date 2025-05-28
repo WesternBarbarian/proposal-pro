@@ -5,7 +5,8 @@ import logging
 from datetime import datetime
 from flask import Blueprint, request, redirect, url_for, flash, session, render_template, current_app
 from blueprints.auth import require_auth
-from db.tenants import is_admin_user
+from db.tenants import is_admin_user, get_tenant_id_by_user_email
+from session_manager import get_tenant_session_manager
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -73,62 +74,80 @@ def manage_sessions():
         
         if action == 'cleanup':
             try:
-                # Perform standard cleanup (respects age)
-                deleted_count = perform_session_cleanup(force_all=False)
-                if deleted_count > 0:
-                    flash(f'Successfully cleaned up {deleted_count} old session files.', 'success')
+                session_manager = get_tenant_session_manager()
+                user_email = session.get('user_email')
+                
+                # Check if user is super admin (can clean all tenants)
+                if is_admin_user(user_email) and session.get('user_role') == 'SUPER_ADMIN':
+                    # Super admin can clean all tenant sessions
+                    deleted_count = session_manager.cleanup_all_tenant_sessions()
+                    flash(f'Successfully cleaned up {deleted_count} old session files across all tenants.', 'success')
                 else:
-                    flash('No session files needed cleaning at this time.', 'info')
+                    # Regular tenant admin can only clean their own tenant's sessions
+                    tenant_id = session.get('tenant_id')
+                    if not tenant_id:
+                        tenant_id = get_tenant_id_by_user_email(user_email)
+                    
+                    if tenant_id:
+                        deleted_count = session_manager.cleanup_tenant_sessions(tenant_id)
+                        flash(f'Successfully cleaned up {deleted_count} old session files for your tenant.', 'success')
+                    else:
+                        flash('No tenant found for cleanup.', 'error')
             except Exception as e:
                 logging.error(f"Session cleanup error: {str(e)}")
                 flash(f'Error cleaning up sessions: {str(e)}', 'error')
                 
         elif action == 'force_cleanup':
             try:
-                # Force more aggressive cleanup
-                deleted_count = perform_session_cleanup(force_all=True)
-                if deleted_count > 0:
-                    flash(f'Successfully cleaned up {deleted_count} session files (forced mode).', 'success')
+                session_manager = get_tenant_session_manager()
+                user_email = session.get('user_email')
+                
+                # Check if user is super admin (can force clean all tenants)
+                if is_admin_user(user_email) and session.get('user_role') == 'SUPER_ADMIN':
+                    deleted_count = session_manager.cleanup_all_tenant_sessions(max_age_seconds=0)
+                    flash(f'Successfully cleaned up {deleted_count} session files (forced mode) across all tenants.', 'success')
                 else:
-                    flash('No session files were cleaned up.', 'info')
+                    # Regular tenant admin can only force clean their own tenant's sessions
+                    tenant_id = session.get('tenant_id')
+                    if not tenant_id:
+                        tenant_id = get_tenant_id_by_user_email(user_email)
+                    
+                    if tenant_id:
+                        deleted_count = session_manager.cleanup_tenant_sessions(tenant_id, force_all=True)
+                        flash(f'Successfully cleaned up {deleted_count} session files (forced mode) for your tenant.', 'success')
+                    else:
+                        flash('No tenant found for cleanup.', 'error')
             except Exception as e:
                 logging.error(f"Forced session cleanup error: {str(e)}")
                 flash(f'Error performing forced cleanup: {str(e)}', 'error')
                 
-    # Get session file stats
-    stats = {
-        'total_files': 0,
-        'size_bytes': 0,
-        'oldest_file': None,
-        'newest_file': None
-    }
+    # Get session file stats based on user permissions
+    stats = []
     
     try:
-        session_dir = current_app.config['SESSION_FILE_DIR']
-        session_files = glob.glob(f"{session_dir}/*")
-        stats['total_files'] = len(session_files)
+        session_manager = get_tenant_session_manager()
+        user_email = session.get('user_email')
         
-        if session_files:
-            # Calculate total size
-            stats['size_bytes'] = sum(os.path.getsize(f) for f in session_files)
+        # Check if user is super admin (can see all tenant stats)
+        if is_admin_user(user_email) and session.get('user_role') == 'SUPER_ADMIN':
+            # Super admin can see all tenant session stats
+            stats = session_manager.get_all_tenant_session_stats()
+        else:
+            # Regular tenant admin can only see their own tenant's stats
+            tenant_id = session.get('tenant_id')
+            if not tenant_id:
+                tenant_id = get_tenant_id_by_user_email(user_email)
             
-            # Get oldest and newest files
-            files_with_times = [(f, os.path.getmtime(f)) for f in session_files]
-            oldest = min(files_with_times, key=lambda x: x[1])
-            newest = max(files_with_times, key=lambda x: x[1])
-            
-            stats['oldest_file'] = {
-                'path': oldest[0],
-                'time': datetime.fromtimestamp(oldest[1]).strftime('%Y-%m-%d %H:%M:%S')
-            }
-            
-            stats['newest_file'] = {
-                'path': newest[0],
-                'time': datetime.fromtimestamp(newest[1]).strftime('%Y-%m-%d %H:%M:%S')
-            }
+            if tenant_id:
+                tenant_stats = session_manager.get_tenant_session_stats(tenant_id)
+                stats = [tenant_stats]
+            else:
+                flash('No tenant found for session information.', 'error')
+                stats = []
     except Exception as e:
         logging.error(f"Error getting session stats: {str(e)}")
         flash(f'Error retrieving session information: {str(e)}', 'error')
+        stats = []
     
     return render_template('manage_sessions.html', 
                           stats=stats,

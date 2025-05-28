@@ -38,10 +38,12 @@ def cleanup_session_files():
             # Sleep first to allow the app to start properly
             time.sleep(CLEANUP_INTERVAL)
 
-            # Run the cleanup
-            deleted = perform_session_cleanup()
+            # Run the cleanup using tenant-aware session manager
+            from session_manager import get_tenant_session_manager
+            session_manager = get_tenant_session_manager()
+            deleted = session_manager.cleanup_all_tenant_sessions()
             if deleted > 0:
-                logging.info(f"Background cleanup removed {deleted} old session files")
+                logging.info(f"Background cleanup removed {deleted} old session files across all tenants")
 
         except Exception as e:
             logging.error(f"Error in session cleanup thread: {str(e)}")
