@@ -79,11 +79,11 @@ app.config['SESSION_KEY_PREFIX'] = 'myapp:'
 app.config['SESSION_FILE_THRESHOLD'] = 500
 
 # Custom session interface to handle tenant isolation
-from flask.sessions import FileSystemSessionInterface
+from flask_session.filesystem import FileSystemSessionInterface
 import os
 
 class TenantAwareSessionInterface(FileSystemSessionInterface):
-    def get_session_filename(self, sid):
+    def _get_fs_session_path_from_sid(self, sid):
         # Get current tenant session directory
         tenant_session_dir = session_manager.get_current_tenant_session_dir()
         return os.path.join(tenant_session_dir, f"session_{sid}")
