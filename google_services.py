@@ -195,15 +195,26 @@ def get_or_create_project_folder(tenant_id, customer_data=None, project_data=Non
             customer_name = customer_data['client_name']
         
         if customer_name:
-            subfolder_name = subfolder_name.replace('{client_name}', customer_name)
-            subfolder_name = subfolder_name.replace('{customer_name}', customer_name)
-            logger.info(f"Replaced customer name with: {customer_name}")
+            # Clean the customer name (remove special characters that aren't folder-friendly)
+            clean_name = "".join(c for c in customer_name if c.isalnum() or c in (' ', '-', '_')).strip()
+            if clean_name:
+                subfolder_name = subfolder_name.replace('{client_name}', clean_name)
+                subfolder_name = subfolder_name.replace('{customer_name}', clean_name)
+                logger.info(f"Replaced customer name with: {clean_name}")
+            else:
+                logger.warning(f"Customer name '{customer_name}' resulted in empty clean name")
+                subfolder_name = subfolder_name.replace('{client_name}', 'Unknown_Client')
+                subfolder_name = subfolder_name.replace('{customer_name}', 'Unknown_Client')
         else:
             logger.warning("No customer name found in customer_data")
-            subfolder_name = "General Projects"
+            # Replace template variables with fallback values instead of changing entire folder name
+            subfolder_name = subfolder_name.replace('{client_name}', 'Unknown_Client')
+            subfolder_name = subfolder_name.replace('{customer_name}', 'Unknown_Client')
     else:
         logger.warning("No customer_data provided")
-        subfolder_name = "General Projects"
+        # Replace template variables with fallback values
+        subfolder_name = subfolder_name.replace('{client_name}', 'Unknown_Client')
+        subfolder_name = subfolder_name.replace('{customer_name}', 'Unknown_Client')
     
     # Add date-based organization if template includes it
     if '{year}' in subfolder_template or '{month}' in subfolder_template:
@@ -212,6 +223,18 @@ def get_or_create_project_folder(tenant_id, customer_data=None, project_data=Non
         subfolder_name = subfolder_name.replace('{year}', str(now.year))
         subfolder_name = subfolder_name.replace('{month}', f"{now.month:02d}")
         logger.info(f"Added date variables to subfolder_name")
+    
+    # Handle any remaining unreplaced template variables
+    import re
+    unreplaced_vars = re.findall(r'\{([^}]+)\}', subfolder_name)
+    if unreplaced_vars:
+        logger.warning(f"Found unreplaced template variables: {unreplaced_vars}")
+        for var in unreplaced_vars:
+            subfolder_name = subfolder_name.replace(f'{{{var}}}', 'Unknown')
+    
+    # Ensure we have a valid folder name
+    if not subfolder_name.strip():
+        subfolder_name = "General Projects"
     
     logger.info(f"Final subfolder_name: {subfolder_name}")
     
