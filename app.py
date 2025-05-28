@@ -89,7 +89,7 @@ class TenantAwareSessionInterface(FileSystemSessionInterface):
         return os.path.join(tenant_session_dir, f"session_{sid}")
 
 # Set the custom session interface
-app.session_interface = TenantAwareSessionInterface()
+app.session_interface = TenantAwareSessionInterface(app)
 
 # Initialize Session
 Session(app)
