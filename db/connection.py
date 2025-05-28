@@ -53,20 +53,24 @@ def close_db_connection(e=None):
     """
     Release the database connection back to the pool
     """
-    db_conn = g.pop('db_conn', None)
-    
+    db_conn = getattr(g, 'db_conn', None)
     if db_conn is not None:
+        # Remove from g object safely
+        if hasattr(g, 'db_conn'):
+            delattr(g, 'db_conn')
+        
         try:
             pool = get_db_pool()
             # Check if connection is still alive
-            if db_conn.closed == 0:
+            if not hasattr(db_conn, 'closed') or db_conn.closed == 0:
                 pool.putconn(db_conn)
             else:
                 pool.putconn(db_conn, close=True)
         except Exception as ex:
             logger.warning(f"Error returning connection to pool: {ex}")
             try:
-                db_conn.close()
+                if hasattr(db_conn, 'close'):
+                    db_conn.close()
             except:
                 pass
 
@@ -111,13 +115,13 @@ def execute_query(query, params=None, fetch=True, retry_count=2):
             logger.warning(f"Database connection error on attempt {attempt + 1}: {e}")
             if attempt < retry_count:
                 # Clear the stale connection and get a fresh one
-                if 'db_conn' in g:
+                if hasattr(g, 'db_conn'):
                     try:
                         pool = get_db_pool()
                         pool.putconn(g.db_conn, close=True)
                     except:
                         pass
-                    del g['db_conn']
+                    delattr(g, 'db_conn')
                 continue
             else:
                 logger.error(f"Database connection failed after {retry_count + 1} attempts")
