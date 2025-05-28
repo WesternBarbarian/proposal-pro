@@ -179,19 +179,17 @@ def create_tables():
         # Create drive_settings table
         create_drive_settings_table = """
         CREATE TABLE IF NOT EXISTS drive_settings (
-          id               UUID      PRIMARY KEY DEFAULT gen_random_uuid(),
-          tenant_id        UUID      NOT NULL REFERENCES tenants(id),
-          folder_template  TEXT      NOT NULL DEFAULT 'Project Proposals',
-          auto_organize    BOOLEAN   NOT NULL DEFAULT false,
-          subfolder_template TEXT    NOT NULL DEFAULT '{client_name}',
-          created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-          updated_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            tenant_id UUID REFERENCES tenants(id),
+            setting_type VARCHAR(50) NOT NULL,
+            setting_key VARCHAR(100) NOT NULL,
+            setting_value TEXT NOT NULL,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_by_email VARCHAR(255) NOT NULL,
+            UNIQUE(tenant_id, setting_type, setting_key)
         );
-
-        -- Create index on tenant_id for faster lookups
-        CREATE INDEX IF NOT EXISTS idx_drive_settings_tenant_id ON drive_settings(tenant_id);
-        -- Ensure one setting per tenant
-        CREATE UNIQUE INDEX IF NOT EXISTS ux_drive_settings_tenant ON drive_settings(tenant_id);
         """
 
         execute_query(create_drive_settings_table, fetch=False)
