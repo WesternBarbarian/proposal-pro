@@ -14,8 +14,8 @@
                 </div>
                 <div class="card-body">
                     <form method="POST">
-                        {{ csrf_token() }}
-                        <div class="mb-3"></div>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="mb-3">
                             <label for="root_folder" class="form-label">Root Folder Name</label>
                             <input type="text" class="form-control" id="root_folder" name="root_folder" 
                                    value="{{ settings.root_folder }}" required>
