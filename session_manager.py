@@ -37,9 +37,13 @@ class TenantSessionManager:
         
         tenant_id = session.get('tenant_id')
         if not tenant_id:
-            tenant_id = get_tenant_id_by_user_email(user_email)
-            if tenant_id:
-                session['tenant_id'] = tenant_id
+            try:
+                tenant_id = get_tenant_id_by_user_email(user_email)
+                if tenant_id:
+                    session['tenant_id'] = tenant_id
+            except Exception as e:
+                logger.error(f"Error getting tenant ID for session management: {e}")
+                return self.base_session_dir
         
         return self.get_tenant_session_dir(tenant_id)
     

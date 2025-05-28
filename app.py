@@ -65,6 +65,32 @@ app.logger.setLevel(logging.DEBUG if app.config['DEBUG'] else logging.INFO)
 if 'WTF_CSRF_SECRET_KEY' not in app.config:
     app.config['WTF_CSRF_SECRET_KEY'] = app.config['SECRET_KEY']
 
+# Configure Flask-Session with tenant isolation
+from session_manager import get_tenant_session_manager
+
+# Initialize session manager
+session_manager = get_tenant_session_manager()
+
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = session_manager.base_session_dir
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'myapp:'
+app.config['SESSION_FILE_THRESHOLD'] = 500
+
+# Custom session interface to handle tenant isolation
+from flask.sessions import FileSystemSessionInterface
+import os
+
+class TenantAwareSessionInterface(FileSystemSessionInterface):
+    def get_session_filename(self, sid):
+        # Get current tenant session directory
+        tenant_session_dir = session_manager.get_current_tenant_session_dir()
+        return os.path.join(tenant_session_dir, f"session_{sid}")
+
+# Set the custom session interface
+app.session_interface = TenantAwareSessionInterface()
+
 # Initialize Session
 Session(app)
 
@@ -97,7 +123,7 @@ init_db(app)
 with app.app_context():
     from db.init_db import create_tables
     tables_created = create_tables()
-    
+
     if tables_created:
         # Only initialize price lists if tables were created successfully
         from db.price_lists import initialize_price_lists

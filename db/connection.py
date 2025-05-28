@@ -56,8 +56,19 @@ def close_db_connection(e=None):
     db_conn = g.pop('db_conn', None)
     
     if db_conn is not None:
-        pool = get_db_pool()
-        pool.putconn(db_conn)
+        try:
+            pool = get_db_pool()
+            # Check if connection is still alive
+            if db_conn.closed == 0:
+                pool.putconn(db_conn)
+            else:
+                pool.putconn(db_conn, close=True)
+        except Exception as ex:
+            logger.warning(f"Error returning connection to pool: {ex}")
+            try:
+                db_conn.close()
+            except:
+                pass
 
 def init_app(app):
     """
@@ -65,31 +76,56 @@ def init_app(app):
     """
     app.teardown_appcontext(close_db_connection)
 
-def execute_query(query, params=None, fetch=True):
+def execute_query(query, params=None, fetch=True, retry_count=2):
     """
-    Execute a database query
+    Execute a database query with connection retry logic
     
     Args:
         query (str): SQL query to execute
         params (tuple or dict): Parameters for the query
         fetch (bool): Whether to fetch results (True) or not (False)
+        retry_count (int): Number of retries for connection issues
         
     Returns:
         list: Query results as a list of dictionaries if fetch is True
         None: If fetch is False (for INSERT, UPDATE, DELETE operations)
     """
-    conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(query, params)
+    for attempt in range(retry_count + 1):
+        try:
+            conn = get_db_connection()
+            # Test the connection
+            with conn.cursor() as test_cur:
+                test_cur.execute("SELECT 1;")
             
-            if fetch:
-                results = cur.fetchall()
-                return [dict(row) for row in results]
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, params)
+                
+                if fetch:
+                    results = cur.fetchall()
+                    return [dict(row) for row in results]
+                else:
+                    conn.commit()
+                    return None
+                    
+        except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+            logger.warning(f"Database connection error on attempt {attempt + 1}: {e}")
+            if attempt < retry_count:
+                # Clear the stale connection and get a fresh one
+                if 'db_conn' in g:
+                    try:
+                        pool = get_db_pool()
+                        pool.putconn(g.db_conn, close=True)
+                    except:
+                        pass
+                    del g['db_conn']
+                continue
             else:
-                conn.commit()
-                return None
-    except Exception as e:
-        conn.rollback()
-        logger.error(f"Database query error: {e}")
-        raise
+                logger.error(f"Database connection failed after {retry_count + 1} attempts")
+                raise
+        except Exception as e:
+            try:
+                conn.rollback()
+            except:
+                pass
+            logger.error(f"Database query error: {e}")
+            raise
