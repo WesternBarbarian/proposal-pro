@@ -180,13 +180,30 @@ def get_or_create_project_folder(tenant_id, customer_data=None, project_data=Non
     logger.info(f"Retrieved subfolder_template: {subfolder_template}")
     
     # Replace template variables
-    if customer_data and 'name' in customer_data:
-        subfolder_name = subfolder_template.replace('{client_name}', customer_data['name'])
-        subfolder_name = subfolder_name.replace('{customer_name}', customer_data['name'])
-    else:
-        subfolder_name = "General Projects"
+    subfolder_name = subfolder_template
     
-    logger.info(f"Created subfolder_name: {subfolder_name}")
+    if customer_data:
+        logger.info(f"Processing customer_data: {customer_data}")
+        
+        # Extract customer name from various possible fields
+        customer_name = None
+        if 'name' in customer_data:
+            customer_name = customer_data['name']
+        elif 'customer_name' in customer_data:
+            customer_name = customer_data['customer_name']
+        elif 'client_name' in customer_data:
+            customer_name = customer_data['client_name']
+        
+        if customer_name:
+            subfolder_name = subfolder_name.replace('{client_name}', customer_name)
+            subfolder_name = subfolder_name.replace('{customer_name}', customer_name)
+            logger.info(f"Replaced customer name with: {customer_name}")
+        else:
+            logger.warning("No customer name found in customer_data")
+            subfolder_name = "General Projects"
+    else:
+        logger.warning("No customer_data provided")
+        subfolder_name = "General Projects"
     
     # Add date-based organization if template includes it
     if '{year}' in subfolder_template or '{month}' in subfolder_template:
@@ -194,6 +211,9 @@ def get_or_create_project_folder(tenant_id, customer_data=None, project_data=Non
         now = datetime.now()
         subfolder_name = subfolder_name.replace('{year}', str(now.year))
         subfolder_name = subfolder_name.replace('{month}', f"{now.month:02d}")
+        logger.info(f"Added date variables to subfolder_name")
+    
+    logger.info(f"Final subfolder_name: {subfolder_name}")
     
     final_folder_id = create_folder_if_not_exists(subfolder_name, root_folder_id)
     logger.info(f"Final folder created with ID: {final_folder_id}")
