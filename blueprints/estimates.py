@@ -8,7 +8,7 @@ from flask_wtf.file import FileField, FileAllowed
 from wtforms import TextAreaField, SubmitField
 from ai_helper import extract_project_data, extract_project_data_from_image, lookup_prices
 from blueprints.auth import require_auth
-from google_services import create_doc_in_folder, create_folder_if_not_exists, append_to_sheet, create_tracking_sheet_if_not_exists
+from google_services import create_doc_in_folder, create_folder_if_not_exists
 from template_manager import load_templates
 from db.estimates import create_estimate, get_estimate, update_estimate
 
@@ -644,9 +644,6 @@ def save_to_drive():
             flash('Failed to create or access Google Drive folder.', 'error')
             return redirect(url_for('estimates.create_proposal'))
 
-        # Create spreadsheet for tracking if it doesn't exist
-        spreadsheet_id = create_tracking_sheet_if_not_exists(project_folder_id)
-
         # Create document with proposal content
         doc_title = f"Proposal - {customer_name} - {project_address}"
         doc_info = create_doc_in_folder(doc_title, proposal_content, project_folder_id)
@@ -655,26 +652,7 @@ def save_to_drive():
             flash('Failed to create Google Doc.', 'error')
             return redirect(url_for('estimates.create_proposal'))
 
-        # Add entry to tracking spreadsheet
-        total_cost = estimate_result.get('total_cost', 0)
-
-        # Append to tracking sheet
-        values = [
-            [
-                customer_name,
-                customer.get('email', ''),
-                customer.get('phone', ''),
-                project_address,
-                f"${total_cost:.2f}",
-                doc_info.get('doc_url', '')
-            ]
-        ]
-        append_result = append_to_sheet(spreadsheet_id, values)
-
-        if append_result:
-            flash('Proposal saved to Google Drive successfully!', 'success')
-        else:
-            flash('Proposal saved to Google Drive, but failed to update tracking sheet.', 'warning')
+        flash('Proposal saved to Google Drive successfully!', 'success')
 
         return redirect(url_for('estimates.create_proposal'))
 
