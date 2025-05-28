@@ -4,8 +4,9 @@ import threading
 import time
 
 
-# Allow OAuth over HTTP for development (crucial for OAuth to work in dev environment)
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+# Allow OAuth over HTTP for development only (crucial for OAuth to work in dev environment)
+if os.environ.get('FLASK_ENV') != 'production':
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 from flask import Flask, render_template, session, flash, redirect, url_for
 from flask_session import Session
